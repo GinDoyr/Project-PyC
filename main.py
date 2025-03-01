@@ -18,7 +18,6 @@ from arcade.gui import (
     UIManager,
     UITextureButton,
     UIFlatButton,
-    UILabel,
     UIBoxLayout,
     UIView,
 )
@@ -116,16 +115,6 @@ class Main_menu(arcade.View):
             self.sett_cent_h += i.height
         self.menu_buttons_center = (self.window.center_x-(self.main_cent_w//2), self.window.center_y-(self.main_cent_h//2))
         self.settings_buttons_center = (self.window.center_x - (self.sett_cent_w // 2), self.window.center_y - (self.sett_cent_h // 2))
-        # about the next thing - I DONT KNOW WHY BUT THIS IS LEGITIMATELY THE ONLY WAY TO CENTER THE BUTTONS PROPERLY
-        # WHY? I DONT KNOW!!!
-        # edit: IT DOESNT WORK. im gonna do some horrible things to this library if this continues
-
-        self.menu_buttons.center = self.menu_buttons_center
-        self.menu_buttons.center_on_screen()
-        self.settings_buttons.center = self.settings_buttons_center
-        self.settings_buttons.center_on_screen()
-        self.menu_buttons_center = self.menu_buttons.center
-        self.settings_buttons_center = self.settings_buttons.center
         self.menu_buttons.center = self.menu_buttons_center
         self.settings_buttons.center = self.settings_buttons_center
 
@@ -135,6 +124,8 @@ class Main_menu(arcade.View):
         self.right_pressed = False
         self.up_pressed = False
         self.down_pressed = False
+        self.rotation_l = False
+        self.rotation_r = False
 
 
     def reset(self):
@@ -167,10 +158,6 @@ class Main_menu(arcade.View):
         Render the screen.
         """
         self.clear()
-        if self.clocker.ticks == 2:
-            print('yes') # WHY DOESNT THIS CENTER THE BUTTONS WHYYYYYYYYYYYY
-            self.menu_buttons.center = self.menu_buttons_center
-            self.settings_buttons.center = self.settings_buttons_center
 
         if self.resize_flag and self.resize_count <= 24:
             window.width += 4
@@ -205,6 +192,7 @@ class Main_menu(arcade.View):
         bullet.change_y = self.pl_bullet_speed
         bullet.center_x = self.player.center_x
         bullet.bottom = self.player.top
+        bullet.angle = self.player.angle + 90
         self.entities_list.append(bullet)
 
     def update_bullets(self):
@@ -220,7 +208,6 @@ class Main_menu(arcade.View):
         need it.
         """
         self.sprite_list.update(delta_time)
-        self.clocker.tick(delta_time)
 
         @self.volume_down.event("on_click") #try a slider for the volume! there was a widget for it, look up in the examples GUI Widget Gallery
         def on_click(event):
@@ -266,9 +253,11 @@ class Main_menu(arcade.View):
         def on_click(event):
             self.resize_flag = True
 
-        if not self.recharge_flag and self.clocker.ticks_since(0) <= (60 // self.pl_bullet_recharge) * (self.clocker.ticks // (60 // self.pl_bullet_recharge)):
-            self.recharge_flag = True
-            print('recharged')
+        if not self.recharge_flag:
+            self.clocker.tick(delta_time)
+            if self.clocker.ticks_since(0) <= (60 // self.pl_bullet_recharge) * (self.clocker.ticks // (60 // self.pl_bullet_recharge)):
+                self.recharge_flag = True
+                self.clocker.tick(0)
 
         if self.shoot_flag and self.recharge_flag:
             self.create_bullets()
@@ -290,6 +279,14 @@ class Main_menu(arcade.View):
         elif self.right_pressed and not self.left_pressed:
             self.player.change_x = 2
 
+    def update_player_angle(self):
+        self.player.change_angle = 0
+        if self.rotation_l and not self.rotation_r:
+            self.player.change_angle = -2
+        elif self.rotation_r and not self.rotation_l:
+            self.player.change_angle = 2
+        print(f"Angle: {self.player.angle}, Top: {self.player.top}")
+
     def on_key_press(self, key, key_modifiers):
         """
         Called whenever a key on the keyboard is pressed.
@@ -307,8 +304,8 @@ class Main_menu(arcade.View):
         if key == arcade.key.L:
             self.test_flag = not self.test_flag
         if key == arcade.key.H:
-            self.menu_buttons.center = self.menu_buttons_center
-            self.settings_buttons.center = self.settings_buttons_center
+            self.menu_buttons.center_on_screen()
+            self.settings_buttons.center_on_screen()
 
         if self.test_flag:
             if key == arcade.key.A:
@@ -323,6 +320,12 @@ class Main_menu(arcade.View):
             if key == arcade.key.S:
                 self.down_pressed = True
                 self.update_player_speed()
+            if key == arcade.key.LEFT:
+                self.rotation_l = True
+                self.update_player_angle()
+            if key == arcade.key.RIGHT:
+                self.rotation_r = True
+                self.update_player_angle()
             if key == arcade.key.SPACE:
                 self.shoot_flag = True
 
@@ -344,6 +347,12 @@ class Main_menu(arcade.View):
             if key == arcade.key.S:
                 self.down_pressed = False
                 self.update_player_speed()
+            if key == arcade.key.LEFT:
+                self.rotation_l = False
+                self.update_player_angle()
+            if key == arcade.key.RIGHT:
+                self.rotation_r = False
+                self.update_player_angle()
             if key == arcade.key.SPACE:
                 self.shoot_flag = False
 

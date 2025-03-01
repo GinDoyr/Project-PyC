@@ -75,11 +75,13 @@ class GameLoop(arcade.View):
         need it.
         """
         self.sprite_list.update(delta_time)
-        self.clocker.tick(delta_time)
 
-        if not self.recharge_flag and self.clocker.ticks_since(0) <= (60 // self.pl_bullet_recharge) * (self.clocker.ticks // (60 // self.pl_bullet_recharge)):
-            self.recharge_flag = True
-            print('recharged')
+        if not self.recharge_flag:
+            self.clocker.tick(delta_time)
+            if self.clocker.ticks_since(0) <= (60 // self.pl_bullet_recharge) * (
+                    self.clocker.ticks // (60 // self.pl_bullet_recharge)):
+                self.recharge_flag = True
+                self.clocker.tick(0)
 
         if self.shoot_flag and self.recharge_flag:
             self.create_bullets()
