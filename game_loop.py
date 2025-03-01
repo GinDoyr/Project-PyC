@@ -17,11 +17,16 @@ class GameLoop(arcade.View):
         self.player.angle = -90
         self.player.center_x = window.center_x
         self.player.center_y = window.center_y
+        self.left_pressed = False
+        self.right_pressed = False
+        self.up_pressed = False
+        self.down_pressed = False
         self.test_flag = False
         self.sprite_list = arcade.SpriteList()
         self.sprite_list.append(self.player)
         self.entities_list = arcade.SpriteList()
         self.shoot_flag = False
+        self.recharge_flag = False
         self.clocker = arcade.clock.Clock()
 
     def update_player_speed(self):
@@ -57,30 +62,6 @@ class GameLoop(arcade.View):
         Render the screen.
         """
         self.clear()
-        global win_width
-        global win_height
-        if self.resize_flag and self.resize_count <= 24:
-            self.window.width += 4
-            self.window.height -= 4
-            self.resize_count += 1
-        elif self.resize_count >= 25 and self.resize_count != 50:
-            if self.resize_count == 25:
-                print(self.window.get_size())
-                print(self.window.get_location())
-            win_width -= 4
-            win_height += 4
-            self.menu_buttons.move(-4, 0) # to move buttons you have to move the anchor, not its elements! either move the whole set of buttons or do each button with their own anchor
-            self.window.set_location(self.window.get_location()[0] + 4, self.window.get_location()[1])
-            self.window.set_size(self.window.width, self.window.height)
-            self.resize_count += 1
-            if self.resize_count == 50:
-                print(self.window.get_size())
-                print(self.window.get_location())
-        else:
-            self.resize_flag = False
-            self.resize_count = 0
-
-        self.ui.draw()
 
         if self.test_flag:
             self.sprite_list.draw()
@@ -95,10 +76,6 @@ class GameLoop(arcade.View):
         """
         self.sprite_list.update(delta_time)
         self.clocker.tick(delta_time)
-
-        @self.button.event("on_click")
-        def on_click(event):
-            self.resize_flag = True
 
         if not self.recharge_flag and self.clocker.ticks_since(0) <= (60 // self.pl_bullet_recharge) * (self.clocker.ticks // (60 // self.pl_bullet_recharge)):
             self.recharge_flag = True
@@ -118,13 +95,6 @@ class GameLoop(arcade.View):
         For a full list of keys, see:
         https://api.arcade.academy/en/latest/arcade.key.html
         """
-        if key == arcade.key.P and not self.bg_flag:
-            self.curr_audio = self.bg_music.play()
-            self.curr_audio.volume = self.bg_volume
-            self.bg_flag = True
-        elif key == arcade.key.P and self.bg_flag:
-            arcade.stop_sound(self.curr_audio)
-            self.bg_flag = False
         if key == arcade.key.L:
             self.test_flag = not self.test_flag
 

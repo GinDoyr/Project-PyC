@@ -13,6 +13,7 @@ import file_mngr.conf_mngr as conf
 from tkinter.filedialog import askopenfilename
 import shutil
 import player
+import game_loop
 from arcade.gui import (
     UIManager,
     UITextureButton,
@@ -26,11 +27,12 @@ win_title = "Project: PyC"
 settings = conf.load_settings()
 win_width = int(conf.set_settings("Settings", "win_width"))
 win_height = int(conf.set_settings("Settings", "win_height"))
-TEX_RED_BUTTON_NORMAL = arcade.load_texture("assets/pictures/Jill.png")
-button_conf_norm = arcade.load_texture("assets/pictures/photo_2025-01-16_23-32-22.jpg")
+TEX_RED_BUTTON_NORMAL = arcade.load_texture(":resources:gui_basic_assets/button/red_normal.png")
+button_conf_norm = arcade.load_texture(":resources:gui_basic_assets/button/red_normal.png")
 TEX_RED_BUTTON_HOVER = arcade.load_texture(":resources:gui_basic_assets/button/red_hover.png")
 TEX_RED_BUTTON_PRESS = arcade.load_texture(":resources:gui_basic_assets/button/red_press.png")
 window = arcade.Window(win_width, win_height, win_title, resizable=True)
+window.center_window()
 
 
 class Main_menu(arcade.View):
@@ -64,7 +66,6 @@ class Main_menu(arcade.View):
         self.recharge_flag = False
         self.clocker = arcade.clock.Clock()
 
-        # Create an anchor layout, which can be used to position widgets on screen
         self.menu_buttons = self.ui.add(UIBoxLayout())
         self.button = self.menu_buttons.add(
             UITextureButton(
@@ -101,13 +102,33 @@ class Main_menu(arcade.View):
             UIFlatButton(text=f"Current music: {str(self.bg_music_pre)[self.bg_music_pre.rfind('/')+1:-4]}", multiline=True)
         )
         self.settings_buttons.visible = False
-        center_width = 0
-        center_height = 0
+        self.sett_cent_w = 0
+        self.sett_cent_h = 0
+        self.main_cent_w = 0
+        self.main_cent_h = 0
+        for i in self.menu_buttons.children:
+            if self.main_cent_w == 0:
+                self.main_cent_w = i.width
+            self.main_cent_h += i.height
         for i in self.settings_buttons.children:
-            if center_width == 0:
-                center_width = i.width
-            center_height += i.height
-        self.settings_buttons.center = (self.window.center_x-(center_width//2), self.window.center_y-(center_height//2))
+            if self.sett_cent_w == 0:
+                self.sett_cent_w = i.width
+            self.sett_cent_h += i.height
+        self.menu_buttons_center = (self.window.center_x-(self.main_cent_w//2), self.window.center_y-(self.main_cent_h//2))
+        self.settings_buttons_center = (self.window.center_x - (self.sett_cent_w // 2), self.window.center_y - (self.sett_cent_h // 2))
+        # about the next thing - I DONT KNOW WHY BUT THIS IS LEGITIMATELY THE ONLY WAY TO CENTER THE BUTTONS PROPERLY
+        # WHY? I DONT KNOW!!!
+        # edit: IT DOESNT WORK. im gonna do some horrible things to this library if this continues
+
+        self.menu_buttons.center = self.menu_buttons_center
+        self.menu_buttons.center_on_screen()
+        self.settings_buttons.center = self.settings_buttons_center
+        self.settings_buttons.center_on_screen()
+        self.menu_buttons_center = self.menu_buttons.center
+        self.settings_buttons_center = self.settings_buttons.center
+        self.menu_buttons.center = self.menu_buttons_center
+        self.settings_buttons.center = self.settings_buttons_center
+
         self.volume_text.disabled = True
 
         self.left_pressed = False
@@ -146,6 +167,11 @@ class Main_menu(arcade.View):
         Render the screen.
         """
         self.clear()
+        if self.clocker.ticks == 2:
+            print('yes') # WHY DOESNT THIS CENTER THE BUTTONS WHYYYYYYYYYYYY
+            self.menu_buttons.center = self.menu_buttons_center
+            self.settings_buttons.center = self.settings_buttons_center
+
         if self.resize_flag and self.resize_count <= 24:
             window.width += 4
             window.height -= 4
@@ -280,6 +306,9 @@ class Main_menu(arcade.View):
             self.bg_flag = False
         if key == arcade.key.L:
             self.test_flag = not self.test_flag
+        if key == arcade.key.H:
+            self.menu_buttons.center = self.menu_buttons_center
+            self.settings_buttons.center = self.settings_buttons_center
 
         if self.test_flag:
             if key == arcade.key.A:
@@ -340,7 +369,6 @@ class Main_menu(arcade.View):
 def main():
     game = Main_menu()
     window.show_view(game)
-    window.center_window()
     arcade.run()
 
 
