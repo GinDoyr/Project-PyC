@@ -1,12 +1,3 @@
-"""
-Starting Template
-
-Once you have learned how to use classes, you can begin your program with this
-template.
-
-If Python and Arcade are installed, this example can be run from the command line with:
-python -m arcade.examples.starting_template
-"""
 import arcade
 import arcade.clock
 import file_mngr.conf_mngr as conf
@@ -14,6 +5,7 @@ from tkinter.filedialog import askopenfilename
 import shutil
 import player
 import game_loop
+import math
 from arcade.gui import (
     UIManager,
     UITextureButton,
@@ -38,33 +30,53 @@ class Main_menu(arcade.View):
     def __init__(self):
         super().__init__()
 
-        self.background_color = arcade.color.AMAZON
-        self.curr_audio = None
-        self.bg_flag = False
-        self.resize_flag = False
+        # misc
+        self.background_color = arcade.color.BLACK
         self.resize_count = 0
-        self.ui = UIManager()
+        self.clocker = arcade.clock.Clock()
+
+        # sound
+        self.curr_audio = None
         self.bg_music_pre = conf.set_settings("Settings", "bg_music")
         self.bg_music = arcade.load_sound(self.bg_music_pre)
         self.bg_volume = float(conf.set_settings("Settings", "bg_volume"))
+
+        # flags
+        self.bg_flag = False
+        self.resize_flag = False
+        self.shoot_flag = False
+        self.recharge_flag = False
+        self.test_flag = False
+        self.mouse_flag = True
+        self.left_pressed = False
+        self.right_pressed = False
+        self.up_pressed = False
+        self.down_pressed = False
+        self.rotation_l = False
+        self.rotation_r = False
+
+        # player stuff
+        # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
         self.player_sprite = conf.set_settings("Settings", "player_sprite")
         self.pl_bullet_sprite = conf.set_settings("Settings", "pl_bul_sprite")
         self.pl_bullet_audio = conf.set_settings("Settings", "pl_bul_audio")
+        self.pl_crsh_sprite = conf.set_settings("Settings", "pl_crsh_sprite")
+        self.pl_crsh = arcade.Sprite(self.pl_crsh_sprite)
         self.pl_bullet_audio_compl = arcade.load_sound(self.pl_bullet_audio)
         self.pl_bullet_speed = 5
         self.pl_bullet_recharge = 12
         self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio_compl, 0.5, 0.5)
-        self.player.angle = -90
         self.player.center_x = window.center_x
         self.player.center_y = window.center_y
-        self.test_flag = False
+
+        # sprite lists and appends
         self.sprite_list = arcade.SpriteList()
         self.sprite_list.append(self.player)
+        self.sprite_list.append(self.pl_crsh)
         self.entities_list = arcade.SpriteList()
-        self.shoot_flag = False
-        self.recharge_flag = False
-        self.clocker = arcade.clock.Clock()
 
+        # gui
+        self.ui = UIManager()
         self.menu_buttons = self.ui.add(UIBoxLayout())
         self.button = self.menu_buttons.add(
             UITextureButton(
@@ -101,6 +113,7 @@ class Main_menu(arcade.View):
             UIFlatButton(text=f"Current music: {str(self.bg_music_pre)[self.bg_music_pre.rfind('/')+1:-4]}", multiline=True)
         )
         self.settings_buttons.visible = False
+        # im hoping to somehow minimize this centering part but idk how to rn
         self.sett_cent_w = 0
         self.sett_cent_h = 0
         self.main_cent_w = 0
@@ -117,21 +130,7 @@ class Main_menu(arcade.View):
         self.settings_buttons_center = (self.window.center_x - (self.sett_cent_w // 2), self.window.center_y - (self.sett_cent_h // 2))
         self.menu_buttons.center = self.menu_buttons_center
         self.settings_buttons.center = self.settings_buttons_center
-
         self.volume_text.disabled = True
-
-        self.left_pressed = False
-        self.right_pressed = False
-        self.up_pressed = False
-        self.down_pressed = False
-        self.rotation_l = False
-        self.rotation_r = False
-
-
-    def reset(self):
-        """Reset the game to the initial state."""
-        # Do changes needed to restart the game here if you want to support that
-        pass
 
     def on_show_view(self) -> None:
         self.ui.enable()
@@ -189,16 +188,22 @@ class Main_menu(arcade.View):
     def create_bullets(self):
         arcade.play_sound(self.player.bullet_audio)
         bullet = arcade.Sprite(self.player.bullet_sprite)
-        bullet.change_y = self.pl_bullet_speed
+        angle = math.radians(self.player.angle)
+        bullet.angle = math.degrees(angle)
+        bullet.change_y = self.pl_bullet_speed * math.cos(angle)
+        bullet.change_x = self.pl_bullet_speed * math.sin(angle)
         bullet.center_x = self.player.center_x
-        bullet.bottom = self.player.top
-        bullet.angle = self.player.angle + 90
+        bullet.center_y = self.player.center_y
         self.entities_list.append(bullet)
+
+    def update_crosshair(self, x, y):
+        self.pl_crsh.center_x = x
+        self.pl_crsh.center_y = y
 
     def update_bullets(self):
         self.entities_list.update()
         for entity in self.entities_list:
-            if entity.bottom > win_height or entity.top < 0 or entity.right < 0 or entity.left > win_width:
+            if entity.bottom > window.height or entity.top < 0 or entity.right < 0 or entity.left > window.width:
                 entity.remove_from_sprite_lists()
 
     def on_update(self, delta_time):
@@ -279,13 +284,11 @@ class Main_menu(arcade.View):
         elif self.right_pressed and not self.left_pressed:
             self.player.change_x = 2
 
-    def update_player_angle(self):
-        self.player.change_angle = 0
-        if self.rotation_l and not self.rotation_r:
-            self.player.change_angle = -2
-        elif self.rotation_r and not self.rotation_l:
-            self.player.change_angle = 2
-        print(f"Angle: {self.player.angle}, Top: {self.player.top}")
+    def update_player_angle(self, x, y):
+        x_angle = x - self.player.center_x
+        y_angle = y - self.player.center_y
+        angle = math.atan2(-y_angle, x_angle)
+        self.player.angle = math.degrees(angle) + 90
 
     def on_key_press(self, key, key_modifiers):
         """
@@ -294,15 +297,19 @@ class Main_menu(arcade.View):
         For a full list of keys, see:
         https://api.arcade.academy/en/latest/arcade.key.html
         """
-        if key == arcade.key.P and not self.bg_flag:
-            self.curr_audio = self.bg_music.play()
-            self.curr_audio.volume = self.bg_volume
-            self.bg_flag = True
-        elif key == arcade.key.P and self.bg_flag:
-            arcade.stop_sound(self.curr_audio)
-            self.bg_flag = False
+        if key == arcade.key.P:
+            if self.bg_flag:
+                arcade.stop_sound(self.curr_audio)
+                self.bg_flag = False
+            elif not self.bg_flag:
+                self.curr_audio = self.bg_music.play()
+                self.curr_audio.volume = self.bg_volume
+                self.bg_flag = True
+
         if key == arcade.key.L:
-            self.test_flag = not self.test_flag
+            self.test_flag, self.mouse_flag = not self.test_flag, not self.mouse_flag
+            window.set_mouse_visible(self.mouse_flag)
+
         if key == arcade.key.H:
             self.menu_buttons.center_on_screen()
             self.settings_buttons.center_on_screen()
@@ -320,15 +327,8 @@ class Main_menu(arcade.View):
             if key == arcade.key.S:
                 self.down_pressed = True
                 self.update_player_speed()
-            if key == arcade.key.LEFT:
-                self.rotation_l = True
-                self.update_player_angle()
-            if key == arcade.key.RIGHT:
-                self.rotation_r = True
-                self.update_player_angle()
             if key == arcade.key.SPACE:
                 self.shoot_flag = True
-
 
     def on_key_release(self, key, key_modifiers):
         """
@@ -347,20 +347,15 @@ class Main_menu(arcade.View):
             if key == arcade.key.S:
                 self.down_pressed = False
                 self.update_player_speed()
-            if key == arcade.key.LEFT:
-                self.rotation_l = False
-                self.update_player_angle()
-            if key == arcade.key.RIGHT:
-                self.rotation_r = False
-                self.update_player_angle()
             if key == arcade.key.SPACE:
                 self.shoot_flag = False
 
     def on_mouse_motion(self, x, y, delta_x, delta_y):
-        """
-        Called whenever the mouse moves.
-        """
-        pass
+
+        if self.test_flag:
+            self.update_crosshair(x, y)
+            self.update_player_angle(x, y)
+
 
     def on_mouse_press(self, x, y, button, key_modifiers):
         """
