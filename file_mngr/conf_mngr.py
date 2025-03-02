@@ -38,6 +38,8 @@ def load_settings():
 
 
 def create_settings():
+    # try doing a failsafe check for max win width and height, do less and less until the possible minimum has been
+    # reached, after which a system message pops up with the error, also closing the whole game
     os.makedirs("settings")
     config.add_section("Settings")
     config.set("Settings", "win_width", "1280")
