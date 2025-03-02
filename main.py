@@ -1,11 +1,6 @@
 import arcade
 import arcade.clock
-import file_mngr.conf_mngr as conf
-from tkinter.filedialog import askopenfilename
-import shutil
-import player
-import game_loop
-import math
+from arcade.math import rotate_point
 from arcade.gui import (
     UIManager,
     UITextureButton,
@@ -13,6 +8,13 @@ from arcade.gui import (
     UIBoxLayout,
     UIView,
 )
+import file_mngr.conf_mngr as conf
+from tkinter.filedialog import askopenfilename
+import shutil
+import player
+import game_loop
+import math
+
 
 win_title = "Project: PyC"
 settings = conf.load_settings()
@@ -68,11 +70,15 @@ class Main_menu(arcade.View):
         self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio_compl, 0.5, 0.5)
         self.player.center_x = window.center_x
         self.player.center_y = window.center_y
+        self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")
+        self.pl_bul_hitbox.bottom = self.player.top
 
         # sprite lists and appends
         self.sprite_list = arcade.SpriteList()
         self.sprite_list.append(self.player)
         self.sprite_list.append(self.pl_crsh)
+        self.sprite_list.append(self.pl_bul_hitbox)
+        self.pl_bul_hitbox.visible = False
         self.entities_list = arcade.SpriteList()
 
         # gui
@@ -186,14 +192,13 @@ class Main_menu(arcade.View):
             self.entities_list.draw()
 
     def create_bullets(self):
-        arcade.play_sound(self.player.bullet_audio)
+        arcade.play_sound(self.player.bullet_audio, volume=0.2)
         bullet = arcade.Sprite(self.player.bullet_sprite)
         angle = math.radians(self.player.angle)
         bullet.angle = math.degrees(angle)
         bullet.change_y = self.pl_bullet_speed * math.cos(angle)
         bullet.change_x = self.pl_bullet_speed * math.sin(angle)
-        bullet.center_x = self.player.center_x
-        bullet.center_y = self.player.center_y
+        bullet.position = self.pl_bul_hitbox.position
         self.entities_list.append(bullet)
 
     def update_crosshair(self, x, y):
@@ -205,6 +210,25 @@ class Main_menu(arcade.View):
         for entity in self.entities_list:
             if entity.bottom > window.height or entity.top < 0 or entity.right < 0 or entity.left > window.width:
                 entity.remove_from_sprite_lists()
+
+    def rotate_around_point(self, sprite, point, degrees):
+        """
+        Rotate the sprite around a point by the set amount of degrees
+
+        You could remove the change_angle keyword and/or angle change
+        if you know that sprites will always or never change angle.
+
+        Args:
+            point:
+                The point that the sprite will rotate about
+            degrees:
+                How many degrees to rotate the sprite
+        """
+        # there's still smth to do here. try out anything you can think of
+        sprite.position = rotate_point(
+            sprite.center_x, sprite.center_y,
+            point[0], point[1], degrees)
+        print(sprite.position)
 
     def on_update(self, delta_time):
         """
@@ -274,21 +298,29 @@ class Main_menu(arcade.View):
 
         self.player.change_x = 0
         self.player.change_y = 0
+        self.pl_bul_hitbox.change_y = 0
+        self.pl_bul_hitbox.change_x = 0
 
         if self.up_pressed and not self.down_pressed:
             self.player.change_y = 2
+            self.pl_bul_hitbox.change_y = self.player.change_y
         elif self.down_pressed and not self.up_pressed:
             self.player.change_y = -2
+            self.pl_bul_hitbox.change_y = self.player.change_y
         if self.left_pressed and not self.right_pressed:
             self.player.change_x = -2
+            self.pl_bul_hitbox.change_x = self.player.change_x
         elif self.right_pressed and not self.left_pressed:
             self.player.change_x = 2
+            self.pl_bul_hitbox.change_x = self.player.change_x
 
     def update_player_angle(self, x, y):
         x_angle = x - self.player.center_x
         y_angle = y - self.player.center_y
         angle = math.atan2(-y_angle, x_angle)
+        prev_angle = self.player.angle
         self.player.angle = math.degrees(angle) + 90
+        self.rotate_around_point(self.pl_bul_hitbox, self.player.position, self.player.angle - prev_angle)
 
     def on_key_press(self, key, key_modifiers):
         """

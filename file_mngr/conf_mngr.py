@@ -48,7 +48,7 @@ def create_settings():
     config.set("Settings", "bg_volume", "0.5")
     config.set("Settings", "player_sprite", "assets/sprites/player/kestrel-cruiser-type-b-body.png")
     config.set("Settings", "pl_bul_sprite", "assets/sprites/entities/player_bullet.png")
-    config.set("Settings", "pl_bul_audio", "assets/sounds/hl/warn1.wav")
+    config.set("Settings", "pl_bul_audio", "assets/sounds/pew.wav")
     config.set("Settings", "pl_crsh_sprite", "assets/sprites/player/crosshair.png")
 
     with open("settings/settings.ini", "w") as c_file:
