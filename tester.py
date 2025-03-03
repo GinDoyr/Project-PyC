@@ -1,16 +1,3 @@
-"""This example is a proof-of-concept for a scrollable area.
-
-The example shows vertical and horizontal scroll areas with a list of buttons.
-
-The current implementation lags a proper API, customizability, mouse support and documentation,
-but shows how to use the current experimental feature.
-
-If Arcade and Python are properly installed, you can run this example with:
-python -m arcade.examples.gui.exp_scroll_area
-"""
-
-from __future__ import annotations
-
 import arcade
 from arcade.gui import UIAnchorLayout, UIBoxLayout, UIFlatButton, UIView
 from arcade.gui.experimental import UIScrollArea

@@ -7,12 +7,14 @@ import math
 
 
 class GameLoop(arcade.View):
-    def __init__(self):
+    def __init__(self, main_menu, window):
         super().__init__()
 
         # misc
         self.clocker = arcade.clock.Clock()
-        window.set_mouse_visible(False)
+        self.window = window
+        self.window.set_mouse_visible(False)
+        self.main_menu = main_menu
 
         # flags
         self.bg_flag = False
@@ -37,18 +39,14 @@ class GameLoop(arcade.View):
         self.pl_bullet_speed = 10
         self.pl_bullet_recharge = 12
         self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio_compl, 0.5, 0.5)
-        self.player.center_x = window.center_x
-        self.player.center_y = window.center_y
+        self.player.center_x = self.window.center_x
+        self.player.center_y = self.window.center_y
         self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")
         self.pl_bul_hitbox.bottom = self.player.top
         self.pl_bul_hitbox.center_x = self.player.center_x
 
-        # sprite lists and appends
+        # sprite lists
         self.sprite_list = arcade.SpriteList()
-        self.sprite_list.append(self.player)
-        self.sprite_list.append(self.pl_crsh)
-        self.sprite_list.append(self.pl_bul_hitbox)
-        self.pl_bul_hitbox.visible = False
         self.entities_list = arcade.SpriteList()
 
     def rotate_around_point(self, sprite, point, degrees):
@@ -88,7 +86,6 @@ class GameLoop(arcade.View):
         self.player.angle = math.degrees(angle) + 90
         self.rotate_around_point(self.pl_bul_hitbox, self.player.position, self.player.angle - prev_angle)
 
-
     def create_bullets(self):
         arcade.play_sound(self.player.bullet_audio, volume=0.2)
         bullet = arcade.Sprite(self.player.bullet_sprite)
@@ -104,6 +101,13 @@ class GameLoop(arcade.View):
         for entity in self.entities_list:
             if entity.bottom > self.window.height or entity.top < 0 or entity.right < 0 or entity.left > self.window.width:
                 entity.remove_from_sprite_lists()
+
+    def on_show_view(self):
+        self.clear()
+        self.sprite_list.append(self.player)
+        self.sprite_list.append(self.pl_crsh)
+        self.sprite_list.append(self.pl_bul_hitbox)
+        self.pl_bul_hitbox.visible = False
 
     def on_draw(self):
         self.clear()
@@ -128,6 +132,9 @@ class GameLoop(arcade.View):
         self.update_bullets()
 
     def on_key_press(self, key, key_modifiers):
+        if key == arcade.key.ESCAPE:
+            self.window.show_view(self.main_menu)
+            self.window.set_mouse_visible(True)
         if key == arcade.key.A:
             self.left_pressed = True
             self.update_player_speed()
@@ -174,23 +181,3 @@ class GameLoop(arcade.View):
         Called when a user releases a mouse button.
         """
         pass
-
-
-def main():
-    game = GameLoop()
-    window.show_view(game)
-    arcade.run()
-
-
-if __name__ == "__main__":
-    win_title = "Project: PyC"
-    settings = conf.load_settings()
-    win_width = int(conf.set_settings("Settings", "win_width"))
-    win_height = int(conf.set_settings("Settings", "win_height"))
-    TEX_RED_BUTTON_NORMAL = arcade.load_texture(":resources:gui_basic_assets/button/red_normal.png")
-    button_conf_norm = arcade.load_texture(":resources:gui_basic_assets/button/red_normal.png")
-    TEX_RED_BUTTON_HOVER = arcade.load_texture(":resources:gui_basic_assets/button/red_hover.png")
-    TEX_RED_BUTTON_PRESS = arcade.load_texture(":resources:gui_basic_assets/button/red_press.png")
-    window = arcade.Window(win_width, win_height, win_title, resizable=True)
-    window.center_window()
-    main()
