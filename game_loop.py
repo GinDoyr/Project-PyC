@@ -1,54 +1,102 @@
 import arcade
 import arcade.clock
+from arcade.math import rotate_point
 import file_mngr.conf_mngr as conf
 import player
+import math
 
 
 class GameLoop(arcade.View):
-    def __init__(self, window):
+    def __init__(self):
         super().__init__()
-        self.player_sprite = conf.set_settings("Settings", "player_sprite")
-        self.pl_bullet_sprite = conf.set_settings("Settings", "pl_bul_sprite")
-        self.pl_bullet_audio = conf.set_settings("Settings", "pl_bul_audio")
-        self.pl_bullet_audio_compl = arcade.load_sound(self.pl_bullet_audio)
-        self.pl_bullet_speed = 5
-        self.pl_bullet_recharge = 12
-        self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio_compl, 0.5, 0.5)
-        self.player.angle = -90
-        self.player.center_x = window.center_x
-        self.player.center_y = window.center_y
+
+        # misc
+        self.clocker = arcade.clock.Clock()
+        window.set_mouse_visible(False)
+
+        # flags
+        self.bg_flag = False
+        self.resize_flag = False
+        self.shoot_flag = False
+        self.recharge_flag = False
+        self.test_flag = False
+        self.mouse_flag = True
         self.left_pressed = False
         self.right_pressed = False
         self.up_pressed = False
         self.down_pressed = False
-        self.test_flag = False
+
+        # player stuff
+        # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
+        self.player_sprite = conf.set_settings("Settings", "player_sprite")
+        self.pl_bullet_sprite = conf.set_settings("Settings", "pl_bul_sprite")
+        self.pl_bullet_audio = conf.set_settings("Settings", "pl_bul_audio")
+        self.pl_crsh_sprite = conf.set_settings("Settings", "pl_crsh_sprite")
+        self.pl_crsh = arcade.Sprite(self.pl_crsh_sprite)
+        self.pl_bullet_audio_compl = arcade.load_sound(self.pl_bullet_audio)
+        self.pl_bullet_speed = 10
+        self.pl_bullet_recharge = 12
+        self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio_compl, 0.5, 0.5)
+        self.player.center_x = window.center_x
+        self.player.center_y = window.center_y
+        self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")
+        self.pl_bul_hitbox.bottom = self.player.top
+        self.pl_bul_hitbox.center_x = self.player.center_x
+
+        # sprite lists and appends
         self.sprite_list = arcade.SpriteList()
         self.sprite_list.append(self.player)
+        self.sprite_list.append(self.pl_crsh)
+        self.sprite_list.append(self.pl_bul_hitbox)
+        self.pl_bul_hitbox.visible = False
         self.entities_list = arcade.SpriteList()
-        self.shoot_flag = False
-        self.recharge_flag = False
-        self.clocker = arcade.clock.Clock()
+
+    def rotate_around_point(self, sprite, point, degrees):
+        sprite.position = rotate_point(
+            sprite.center_x, sprite.center_y,
+            point[0], point[1], degrees)
+
+    def update_crosshair(self, x, y):
+        self.pl_crsh.center_x = x
+        self.pl_crsh.center_y = y
 
     def update_player_speed(self):
 
         self.player.change_x = 0
         self.player.change_y = 0
+        self.pl_bul_hitbox.change_y = 0
+        self.pl_bul_hitbox.change_x = 0
 
         if self.up_pressed and not self.down_pressed:
             self.player.change_y = 2
+            self.pl_bul_hitbox.change_y = self.player.change_y
         elif self.down_pressed and not self.up_pressed:
             self.player.change_y = -2
+            self.pl_bul_hitbox.change_y = self.player.change_y
         if self.left_pressed and not self.right_pressed:
             self.player.change_x = -2
+            self.pl_bul_hitbox.change_x = self.player.change_x
         elif self.right_pressed and not self.left_pressed:
             self.player.change_x = 2
+            self.pl_bul_hitbox.change_x = self.player.change_x
+
+    def update_player_angle(self, x, y):
+        x_angle = x - self.player.center_x
+        y_angle = y - self.player.center_y
+        angle = math.atan2(-y_angle, x_angle)
+        prev_angle = self.player.angle
+        self.player.angle = math.degrees(angle) + 90
+        self.rotate_around_point(self.pl_bul_hitbox, self.player.position, self.player.angle - prev_angle)
+
 
     def create_bullets(self):
-        arcade.play_sound(self.player.bullet_audio)
+        arcade.play_sound(self.player.bullet_audio, volume=0.2)
         bullet = arcade.Sprite(self.player.bullet_sprite)
-        bullet.change_y = self.pl_bullet_speed
-        bullet.center_x = self.player.center_x
-        bullet.bottom = self.player.top
+        angle = math.radians(self.player.angle)
+        bullet.angle = math.degrees(angle)
+        bullet.change_y = self.pl_bullet_speed * math.cos(angle)
+        bullet.change_x = self.pl_bullet_speed * math.sin(angle)
+        bullet.position = self.pl_bul_hitbox.position
         self.entities_list.append(bullet)
 
     def update_bullets(self):
@@ -58,22 +106,12 @@ class GameLoop(arcade.View):
                 entity.remove_from_sprite_lists()
 
     def on_draw(self):
-        """
-        Render the screen.
-        """
         self.clear()
-
-        if self.test_flag:
-            self.sprite_list.draw()
-            self.sprite_list.draw_hit_boxes()
-            self.entities_list.draw()
+        self.sprite_list.draw()
+        self.sprite_list.draw_hit_boxes()
+        self.entities_list.draw()
 
     def on_update(self, delta_time):
-        """
-        All the logic to move, and the game logic goes here.
-        Normally, you'll call update() on the sprite lists that
-        need it.
-        """
         self.sprite_list.update(delta_time)
 
         if not self.recharge_flag:
@@ -89,58 +127,41 @@ class GameLoop(arcade.View):
 
         self.update_bullets()
 
-
     def on_key_press(self, key, key_modifiers):
-        """
-        Called whenever a key on the keyboard is pressed.
-
-        For a full list of keys, see:
-        https://api.arcade.academy/en/latest/arcade.key.html
-        """
-        if key == arcade.key.L:
-            self.test_flag = not self.test_flag
-
-        if self.test_flag:
-            if key == arcade.key.A:
-                self.left_pressed = True
-                self.update_player_speed()
-            if key == arcade.key.D:
-                self.right_pressed = True
-                self.update_player_speed()
-            if key == arcade.key.W:
-                self.up_pressed = True
-                self.update_player_speed()
-            if key == arcade.key.S:
-                self.down_pressed = True
-                self.update_player_speed()
-            if key == arcade.key.SPACE:
-                self.shoot_flag = True
+        if key == arcade.key.A:
+            self.left_pressed = True
+            self.update_player_speed()
+        if key == arcade.key.D:
+            self.right_pressed = True
+            self.update_player_speed()
+        if key == arcade.key.W:
+            self.up_pressed = True
+            self.update_player_speed()
+        if key == arcade.key.S:
+            self.down_pressed = True
+            self.update_player_speed()
+        if key == arcade.key.SPACE:
+            self.shoot_flag = True
 
     def on_key_release(self, key, key_modifiers):
-        """
-        Called whenever the user lets off a previously pressed key.
-        """
-        if self.test_flag:
-            if key == arcade.key.A:
-                self.left_pressed = False
-                self.update_player_speed()
-            if key == arcade.key.D:
-                self.right_pressed = False
-                self.update_player_speed()
-            if key == arcade.key.W:
-                self.up_pressed = False
-                self.update_player_speed()
-            if key == arcade.key.S:
-                self.down_pressed = False
-                self.update_player_speed()
-            if key == arcade.key.SPACE:
-                self.shoot_flag = False
+        if key == arcade.key.A:
+            self.left_pressed = False
+            self.update_player_speed()
+        if key == arcade.key.D:
+            self.right_pressed = False
+            self.update_player_speed()
+        if key == arcade.key.W:
+            self.up_pressed = False
+            self.update_player_speed()
+        if key == arcade.key.S:
+            self.down_pressed = False
+            self.update_player_speed()
+        if key == arcade.key.SPACE:
+            self.shoot_flag = False
 
     def on_mouse_motion(self, x, y, delta_x, delta_y):
-        """
-        Called whenever the mouse moves.
-        """
-        pass
+        self.update_crosshair(x, y)
+        self.update_player_angle(x, y)
 
     def on_mouse_press(self, x, y, button, key_modifiers):
         """
@@ -153,3 +174,23 @@ class GameLoop(arcade.View):
         Called when a user releases a mouse button.
         """
         pass
+
+
+def main():
+    game = GameLoop()
+    window.show_view(game)
+    arcade.run()
+
+
+if __name__ == "__main__":
+    win_title = "Project: PyC"
+    settings = conf.load_settings()
+    win_width = int(conf.set_settings("Settings", "win_width"))
+    win_height = int(conf.set_settings("Settings", "win_height"))
+    TEX_RED_BUTTON_NORMAL = arcade.load_texture(":resources:gui_basic_assets/button/red_normal.png")
+    button_conf_norm = arcade.load_texture(":resources:gui_basic_assets/button/red_normal.png")
+    TEX_RED_BUTTON_HOVER = arcade.load_texture(":resources:gui_basic_assets/button/red_hover.png")
+    TEX_RED_BUTTON_PRESS = arcade.load_texture(":resources:gui_basic_assets/button/red_press.png")
+    window = arcade.Window(win_width, win_height, win_title, resizable=True)
+    window.center_window()
+    main()

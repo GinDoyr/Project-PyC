@@ -54,8 +54,6 @@ class Main_menu(arcade.View):
         self.right_pressed = False
         self.up_pressed = False
         self.down_pressed = False
-        self.rotation_l = False
-        self.rotation_r = False
 
         # player stuff
         # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
@@ -71,6 +69,8 @@ class Main_menu(arcade.View):
         self.player.center_x = window.center_x
         self.player.center_y = window.center_y
         self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")
+        self.pl_bul_hitbox.bottom = self.player.top
+        self.pl_bul_hitbox.center_x = self.player.center_x
 
         # sprite lists and appends
         self.sprite_list = arcade.SpriteList()
@@ -78,8 +78,6 @@ class Main_menu(arcade.View):
         self.sprite_list.append(self.pl_crsh)
         self.sprite_list.append(self.pl_bul_hitbox)
         self.pl_bul_hitbox.visible = False
-        self.pl_bul_hitbox.bottom = self.player.top
-        self.pl_bul_hitbox.center_x = self.player.center_x
         self.entities_list = arcade.SpriteList()
 
         # gui
@@ -210,23 +208,9 @@ class Main_menu(arcade.View):
                 entity.remove_from_sprite_lists()
 
     def rotate_around_point(self, sprite, point, degrees):
-        """
-        Rotate the sprite around a point by the set amount of degrees
-
-        You could remove the change_angle keyword and/or angle change
-        if you know that sprites will always or never change angle.
-
-        Args:
-            point:
-                The point that the sprite will rotate about
-            degrees:
-                How many degrees to rotate the sprite
-        """
-        # there's still smth to do here. try out anything you can think of
         sprite.position = rotate_point(
             sprite.center_x, sprite.center_y,
-            point[0], point[1], degrees) # SOMETHING  COME ON INGERLAND
-        print(point[0], point[1],)
+            point[0], point[1], degrees)
 
     def on_update(self, delta_time):
         """
@@ -381,7 +365,6 @@ class Main_menu(arcade.View):
                 self.shoot_flag = False
 
     def on_mouse_motion(self, x, y, delta_x, delta_y):
-
         if self.test_flag:
             self.update_crosshair(x, y)
             self.update_player_angle(x, y)
