@@ -6,6 +6,12 @@ import player
 import math
 
 
+def rotate_around_point(sprite, point, degrees):
+    sprite.position = rotate_point(
+        sprite.center_x, sprite.center_y,
+        point[0], point[1], degrees)
+
+
 class GameLoop(arcade.View):
     def __init__(self, main_menu, window):
         super().__init__()
@@ -15,13 +21,13 @@ class GameLoop(arcade.View):
         self.window = window
         self.window.set_mouse_visible(False)
         self.main_menu = main_menu
+        self.mouse_x, self.mouse_y = self.window.center_x, self.window.center_y
 
         # flags
         self.bg_flag = False
         self.resize_flag = False
         self.shoot_flag = False
         self.recharge_flag = False
-        self.test_flag = False
         self.mouse_flag = True
         self.left_pressed = False
         self.right_pressed = False
@@ -37,8 +43,9 @@ class GameLoop(arcade.View):
         self.pl_crsh = arcade.Sprite(self.pl_crsh_sprite)
         self.pl_bullet_audio_compl = arcade.load_sound(self.pl_bullet_audio)
         self.pl_bullet_speed = 10
-        self.pl_bullet_recharge = 12
-        self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio_compl, 0.5, 0.5)
+        self.pl_bullet_recharge = 3 # higher - faster
+        self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio_compl, 0.2, 0.2)
+        self.pl_speed = 10
         self.player.center_x = self.window.center_x
         self.player.center_y = self.window.center_y
         self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")
@@ -48,11 +55,10 @@ class GameLoop(arcade.View):
         # sprite lists
         self.sprite_list = arcade.SpriteList()
         self.entities_list = arcade.SpriteList()
-
-    def rotate_around_point(self, sprite, point, degrees):
-        sprite.position = rotate_point(
-            sprite.center_x, sprite.center_y,
-            point[0], point[1], degrees)
+        self.sprite_list.append(self.player)
+        self.sprite_list.append(self.pl_crsh)
+        self.sprite_list.append(self.pl_bul_hitbox)
+        self.pl_bul_hitbox.visible = False
 
     def update_crosshair(self, x, y):
         self.pl_crsh.center_x = x
@@ -66,16 +72,16 @@ class GameLoop(arcade.View):
         self.pl_bul_hitbox.change_x = 0
 
         if self.up_pressed and not self.down_pressed:
-            self.player.change_y = 2
+            self.player.change_y = self.pl_speed
             self.pl_bul_hitbox.change_y = self.player.change_y
         elif self.down_pressed and not self.up_pressed:
-            self.player.change_y = -2
+            self.player.change_y = -self.pl_speed
             self.pl_bul_hitbox.change_y = self.player.change_y
         if self.left_pressed and not self.right_pressed:
-            self.player.change_x = -2
+            self.player.change_x = -self.pl_speed
             self.pl_bul_hitbox.change_x = self.player.change_x
         elif self.right_pressed and not self.left_pressed:
-            self.player.change_x = 2
+            self.player.change_x = self.pl_speed
             self.pl_bul_hitbox.change_x = self.player.change_x
 
     def update_player_angle(self, x, y):
@@ -84,7 +90,7 @@ class GameLoop(arcade.View):
         angle = math.atan2(-y_angle, x_angle)
         prev_angle = self.player.angle
         self.player.angle = math.degrees(angle) + 90
-        self.rotate_around_point(self.pl_bul_hitbox, self.player.position, self.player.angle - prev_angle)
+        rotate_around_point(self.pl_bul_hitbox, self.player.position, self.player.angle - prev_angle)
 
     def create_bullets(self):
         arcade.play_sound(self.player.bullet_audio, volume=0.2)
@@ -101,13 +107,6 @@ class GameLoop(arcade.View):
         for entity in self.entities_list:
             if entity.bottom > self.window.height or entity.top < 0 or entity.right < 0 or entity.left > self.window.width:
                 entity.remove_from_sprite_lists()
-
-    def on_show_view(self):
-        self.clear()
-        self.sprite_list.append(self.player)
-        self.sprite_list.append(self.pl_crsh)
-        self.sprite_list.append(self.pl_bul_hitbox)
-        self.pl_bul_hitbox.visible = False
 
     def on_draw(self):
         self.clear()
@@ -130,6 +129,8 @@ class GameLoop(arcade.View):
             self.recharge_flag = False
 
         self.update_bullets()
+        self.update_crosshair(self.mouse_x, self.mouse_y)
+        self.update_player_angle(self.mouse_x, self.mouse_y)
 
     def on_key_press(self, key, key_modifiers):
         if key == arcade.key.ESCAPE:
@@ -167,8 +168,8 @@ class GameLoop(arcade.View):
             self.shoot_flag = False
 
     def on_mouse_motion(self, x, y, delta_x, delta_y):
-        self.update_crosshair(x, y)
-        self.update_player_angle(x, y)
+        self.mouse_x = x
+        self.mouse_y = y
 
     def on_mouse_press(self, x, y, button, key_modifiers):
         """

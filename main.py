@@ -42,9 +42,13 @@ class Main_menu(arcade.View):
         # flags
         self.bg_flag = False
         self.resize_flag = False
+        self.menu_center_flag = False
+        self.menu_exists = False
 
         # gui
         self.ui = UIManager()
+
+        # main menu
         self.menu_buttons = self.ui.add(UIBoxLayout())
         self.start = self.menu_buttons.add(
             UITextureButton(
@@ -64,46 +68,58 @@ class Main_menu(arcade.View):
                 texture=button_conf_norm,
                 texture_hovered=TEX_RED_BUTTON_HOVER,
                 texture_pressed=TEX_RED_BUTTON_PRESS))
+        self.exit_main = self.menu_buttons.add(
+            UITextureButton(
+                text="Exit",
+                texture=button_conf_norm,
+                texture_hovered=TEX_RED_BUTTON_HOVER,
+                texture_pressed=TEX_RED_BUTTON_PRESS))
+
+        # settings
         self.settings_buttons = self.ui.add(UIBoxLayout())
-        self.volume_up = self.settings_buttons.add(
+        self.audio_conf = self.settings_buttons.add(
+            UIFlatButton(text="Audio")
+        )
+        self.contrl_conf = self.settings_buttons.add(
+            UIFlatButton(text="Controls")
+        )
+        self.assets_conf = self.settings_buttons.add(
+            UIFlatButton(text="Assets")
+        )
+        self.back_conf = self.settings_buttons.add(
+            UIFlatButton(text="Back")
+        )
+
+        # audio settings
+        self.audio_buttons = self.ui.add(UIBoxLayout())
+        self.volume_up = self.audio_buttons.add(
             UIFlatButton(text="Volume +10")
         )
-        self.volume_text = self.settings_buttons.add(
+        self.volume_text = self.audio_buttons.add(
             UIFlatButton(text=f"Volume: {int(self.bg_volume*100)}")
         )
-        self.volume_down = self.settings_buttons.add(
+        self.volume_down = self.audio_buttons.add(
             UIFlatButton(text="Volume -10")
         )
-        self.confirm_vol = self.settings_buttons.add(
-            UIFlatButton(text="Save changes and exit settings", multiline=True)
+        self.confirm_vol = self.audio_buttons.add(
+            UIFlatButton(text="Save changes", multiline=True)
         )
-        self.load_bg = self.settings_buttons.add(
-            UIFlatButton(text="Load background music", multiline=True)
+        self.back_vol = self.audio_buttons.add(
+            UIFlatButton(text="Back")
         )
-        self.select_bg = self.settings_buttons.add(
-            UIFlatButton(text="Select loaded bg music", multiline=True)
+        self.load_bg = self.audio_buttons.add(
+            UIFlatButton(text="Load bg music", multiline=True)
         )
-        self.bg_curr = self.settings_buttons.add(
+        self.select_bg = self.audio_buttons.add(
+            UIFlatButton(text="Select bg music", multiline=True)
+        )
+        self.bg_curr = self.audio_buttons.add(
             UIFlatButton(text=f"Current music: {str(self.bg_music_pre)[self.bg_music_pre.rfind('/')+1:-4]}", multiline=True)
         )
+
+        # button flags
         self.settings_buttons.visible = False
-        # im hoping to somehow minimize this centering part but idk how to rn
-        self.sett_cent_w = 0
-        self.sett_cent_h = 0
-        self.main_cent_w = 0
-        self.main_cent_h = 0
-        for i in self.menu_buttons.children:
-            if self.main_cent_w == 0:
-                self.main_cent_w = i.width
-            self.main_cent_h += i.height
-        for i in self.settings_buttons.children:
-            if self.sett_cent_w == 0:
-                self.sett_cent_w = i.width
-            self.sett_cent_h += i.height
-        self.menu_buttons_center = (self.window.center_x-(self.main_cent_w//2), self.window.center_y-(self.main_cent_h//2))
-        self.settings_buttons_center = (self.window.center_x - (self.sett_cent_w // 2), self.window.center_y - (self.sett_cent_h // 2))
-        self.menu_buttons.center = self.menu_buttons_center
-        self.settings_buttons.center = self.settings_buttons_center
+        self.audio_buttons.visible = False
         self.volume_text.disabled = True
 
     def on_show_view(self) -> None:
@@ -111,6 +127,7 @@ class Main_menu(arcade.View):
 
     def on_hide_view(self) -> None:
         self.ui.disable()
+        self.menu_exists = True
 
     # def resize_screen(self, change_x: int, change_y: int, move_x: int, move_y: int, move_loc: str,
     #                   method: str = 'middle', speed: int = 1) -> None:
@@ -149,14 +166,65 @@ class Main_menu(arcade.View):
             self.resize_flag = False
             self.resize_count = 0
 
+        if self.menu_exists:
+            self.menu_buttons.center_on_screen()
+            self.settings_buttons.center_on_screen()
+            self.audio_buttons.center_on_screen()
+            self.menu_exists = False
+
         self.ui.draw()
 
+        # this finally centers the buttons properly. my god
+        if not self.menu_center_flag:
+            self.menu_buttons.center_on_screen()
+            self.settings_buttons.center_on_screen()
+            self.audio_buttons.center_on_screen()
+            self.menu_center_flag = True
+
     def on_update(self, delta_time):
+
+        # main menu buttons
         @self.start.event("on_click")
         def on_click(event):
             game = game_loop.GameLoop(self, window)
             window.show_view(game)
 
+        @self.button.event("on_click")
+        def on_click(event):
+            self.resize_flag = True
+
+        @self.button_conf.event("on_click")
+        def on_click(event):
+            self.settings_buttons.visible = True
+            self.menu_buttons.visible = False
+
+        @self.exit_main.event("on_click", "hover")
+        def on_click(event):
+            print("closing game")
+            window.close()
+
+        # settings buttons
+        @self.audio_conf.event("on_click")
+        def on_click(event):
+            self.settings_buttons.visible = False
+            self.audio_buttons.visible = True
+
+        @self.contrl_conf.event("on_click")
+        def on_click(event):
+            # self.settings_buttons.visible = False
+            print('controls')
+
+        @self.assets_conf.event("on_click")
+        def on_click(event):
+            # self.settings_buttons.visible = False
+            print('assets')
+
+        @self.back_conf.event("on_click")
+        def on_click(event):
+            self.settings_buttons.visible = False
+            self.menu_buttons.visible = True
+
+        # audio buttons
         @self.volume_down.event("on_click") #try a slider for the volume! there was a widget for it, look up in the examples GUI Widget Gallery
         def on_click(event):
             if round(self.bg_volume, 1) > 0:
@@ -175,9 +243,13 @@ class Main_menu(arcade.View):
 
         @self.confirm_vol.event("on_click")
         def on_click(event):
-            self.settings_buttons.visible = False
-            self.menu_buttons.visible = True
             conf.update_setting("Settings", "bg_volume", str(self.bg_volume))
+            print('volume saved')
+
+        @self.back_vol.event("on_click")
+        def on_click(event):
+            self.audio_buttons.visible = False
+            self.settings_buttons.visible = True
 
         @self.load_bg.event("on_click")
         def on_click(event):
@@ -192,14 +264,6 @@ class Main_menu(arcade.View):
                 print("ERROR! idk what honestly")
             print(filename[filename.rfind("/")+1:], filename)
 
-        @self.button_conf.event("on_click")
-        def on_click(event):
-            self.settings_buttons.visible = True
-            self.menu_buttons.visible = False
-
-        @self.button.event("on_click")
-        def on_click(event):
-            self.resize_flag = True
 
     def on_key_press(self, key, key_modifiers):
         """
