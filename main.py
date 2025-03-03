@@ -65,13 +65,12 @@ class Main_menu(arcade.View):
         self.pl_crsh_sprite = conf.set_settings("Settings", "pl_crsh_sprite")
         self.pl_crsh = arcade.Sprite(self.pl_crsh_sprite)
         self.pl_bullet_audio_compl = arcade.load_sound(self.pl_bullet_audio)
-        self.pl_bullet_speed = 5
+        self.pl_bullet_speed = 10
         self.pl_bullet_recharge = 12
         self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio_compl, 0.5, 0.5)
         self.player.center_x = window.center_x
         self.player.center_y = window.center_y
         self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")
-        self.pl_bul_hitbox.bottom = self.player.top
 
         # sprite lists and appends
         self.sprite_list = arcade.SpriteList()
@@ -79,6 +78,8 @@ class Main_menu(arcade.View):
         self.sprite_list.append(self.pl_crsh)
         self.sprite_list.append(self.pl_bul_hitbox)
         self.pl_bul_hitbox.visible = False
+        self.pl_bul_hitbox.bottom = self.player.top
+        self.pl_bul_hitbox.center_x = self.player.center_x
         self.entities_list = arcade.SpriteList()
 
         # gui
@@ -159,9 +160,6 @@ class Main_menu(arcade.View):
     #     pass
 
     def on_draw(self):
-        """
-        Render the screen.
-        """
         self.clear()
 
         if self.resize_flag and self.resize_count <= 24:
@@ -227,8 +225,8 @@ class Main_menu(arcade.View):
         # there's still smth to do here. try out anything you can think of
         sprite.position = rotate_point(
             sprite.center_x, sprite.center_y,
-            point[0], point[1], degrees)
-        print(sprite.position)
+            point[0], point[1], degrees) # SOMETHING  COME ON INGERLAND
+        print(point[0], point[1],)
 
     def on_update(self, delta_time):
         """
