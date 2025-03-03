@@ -117,9 +117,22 @@ class Main_menu(arcade.View):
             UIFlatButton(text=f"Current music: {str(self.bg_music_pre)[self.bg_music_pre.rfind('/')+1:-4]}", multiline=True)
         )
 
+        # assets selection
+        self.assets_buttons = self.ui.add(UIBoxLayout())
+        self.audio_assets = self.assets_buttons.add(
+            UIFlatButton(text="Audio")
+        )
+        self.sprites_assets = self.assets_buttons.add(
+            UIFlatButton(text="Sprites")
+        )
+        self.back_assets = self.assets_buttons.add(
+            UIFlatButton(text="Back")
+        )
+
         # button flags
         self.settings_buttons.visible = False
         self.audio_buttons.visible = False
+        self.assets_buttons.visible = False
         self.volume_text.disabled = True
 
     def on_show_view(self) -> None:
@@ -170,6 +183,7 @@ class Main_menu(arcade.View):
             self.menu_buttons.center_on_screen()
             self.settings_buttons.center_on_screen()
             self.audio_buttons.center_on_screen()
+            self.assets_buttons.center_on_screen()
             self.menu_exists = False
 
         self.ui.draw()
@@ -179,6 +193,7 @@ class Main_menu(arcade.View):
             self.menu_buttons.center_on_screen()
             self.settings_buttons.center_on_screen()
             self.audio_buttons.center_on_screen()
+            self.assets_buttons.center_on_screen()
             self.menu_center_flag = True
 
     def on_update(self, delta_time):
@@ -216,8 +231,8 @@ class Main_menu(arcade.View):
 
         @self.assets_conf.event("on_click")
         def on_click(event):
-            # self.settings_buttons.visible = False
-            print('assets')
+            self.settings_buttons.visible = False
+            self.assets_buttons.visible = True
 
         @self.back_conf.event("on_click")
         def on_click(event):
@@ -264,6 +279,19 @@ class Main_menu(arcade.View):
                 print("ERROR! idk what honestly")
             print(filename[filename.rfind("/")+1:], filename)
 
+        # assets buttons
+        @self.audio_assets.event("on_click")
+        def on_click(event):
+            print("audio")
+
+        @self.sprites_assets.event("on_click")
+        def on_click(event):
+            print("sprites")
+
+        @self.back_assets.event("on_click")
+        def on_click(event):
+            self.assets_buttons.visible = False
+            self.settings_buttons.visible = True
 
     def on_key_press(self, key, key_modifiers):
         """
