@@ -170,6 +170,7 @@ class Main_menu(arcade.View):
             window.width -= 4
             window.height += 4
             self.menu_buttons.move(-4, 0) # to move buttons you have to move the anchor, not its elements! either move the whole set of buttons or do each button with their own anchor
+            self.clear()
             window.set_location(window.get_location()[0] + 4, window.get_location()[1])
             self.resize_count += 1
             if self.resize_count == 50:
@@ -275,8 +276,8 @@ class Main_menu(arcade.View):
                     print('loaded')
                 else:
                     print("either alr loaded or incorrect file type")
-            except:
-                print("ERROR! idk what honestly")
+            except Exception as e:
+                print("ERROR! idk what honestly: ", e)
             print(filename[filename.rfind("/")+1:], filename)
 
         # assets buttons
