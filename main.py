@@ -10,6 +10,7 @@ import file_mngr.conf_mngr as conf
 from tkinter.filedialog import askopenfilename
 import shutil
 import game_loop
+import asset_selector
 
 
 win_title = "Project: PyC"
@@ -202,7 +203,7 @@ class Main_menu(arcade.View):
         # main menu buttons
         @self.start.event("on_click")
         def on_click(event):
-            game = game_loop.GameLoop(self, window)
+            game = game_loop.GameLoop(self)
             window.show_view(game)
 
         @self.button.event("on_click")
@@ -283,11 +284,13 @@ class Main_menu(arcade.View):
         # assets buttons
         @self.audio_assets.event("on_click")
         def on_click(event):
-            print("audio")
+            assets = asset_selector.AssetSelector(self.audio_assets.text, self)
+            window.show_view(assets)
 
         @self.sprites_assets.event("on_click")
         def on_click(event):
-            print("sprites")
+            assets = asset_selector.AssetSelector(self.sprites_assets.text, self)
+            window.show_view(assets)
 
         @self.back_assets.event("on_click")
         def on_click(event):

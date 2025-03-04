@@ -13,12 +13,11 @@ def rotate_around_point(sprite, point, degrees):
 
 
 class GameLoop(arcade.View):
-    def __init__(self, main_menu, window):
+    def __init__(self, main_menu):
         super().__init__()
 
         # misc
         self.clocker = arcade.clock.Clock()
-        self.window = window
         self.window.set_mouse_visible(False)
         self.main_menu = main_menu
         self.mouse_x, self.mouse_y = self.window.center_x, self.window.center_y
