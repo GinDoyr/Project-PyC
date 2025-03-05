@@ -36,7 +36,6 @@ class MyView(UIView):
         scroll_layout = v_scroll_area.add(UIScrollArea(size_hint=(1, 1)))
         scroll_layout.with_border(color=arcade.uicolor.WHITE_CLOUDS)
         scroll_layout.add(self.vertical_list)
-
         v_scroll_area.add(UIScrollBar(scroll_layout))
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:

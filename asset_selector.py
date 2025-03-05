@@ -30,14 +30,22 @@ class AssetSelector(arcade.View):
             default=dropdown_options.get('Player')[0], options=dropdown_options.get('Player'))
         self.anchor.add(self.dropdown1)
         self.anchor.add(self.dropdown2)
+        child_width = 0
+        for i in self.anchor.children:
+            child_width += i.width
+        wid = self.window.width
+        self.anchor.move(wid*2//3+(wid//3 - child_width)//2, self.window.height*15//16)
+        if self.anchor.left+child_width > wid:
+            print('OUT THE WINDOW!! if this happened that means i was too lazy to make the rescalable window')
 
-        self.anchor2 = self.ui.add(UIBoxLayout(size_hint=[1,1]))
+        self.anchor2 = self.ui.add(UIBoxLayout(vertical=False))
         self.save_button = self.anchor2.add(
-            UIFlatButton(text='Save changes', multiline=True)
+            UIFlatButton(width=child_width//2, text='Save changes')
         )
         self.exit_button = self.anchor2.add(
-            UIFlatButton(text='Back to main menu', multiline=True)
+            UIFlatButton(width=child_width//2, text='Back to main menu')
         )
+        self.anchor2.move(wid*2//3+(wid//3 - child_width)//2, 10)
 
         # gui buttons calls
         @self.exit_button.event("on_click")
@@ -52,15 +60,15 @@ class AssetSelector(arcade.View):
                 default=dropdown_options.get(self.dropdown1.value)[0], options=dropdown_options.get(self.dropdown1.value))
             self.anchor.add(self.dropdown2)
 
-    def on_show_view(self) -> None:
+    def on_show_view(self):
         self.ui.enable()
 
-    def on_hide_view(self) -> None:
+    def on_hide_view(self):
         self.ui.disable()
 
     def on_draw(self):
         self.clear()
-        self.anchor.center_on_screen()
+        arcade.draw_line(self.window.width*2//3, 0, self.window.width*2//3, self.window.height, arcade.color.WHEAT, 1)
         self.ui.draw()
 
     def on_update(self, delta_time):
@@ -68,14 +76,3 @@ class AssetSelector(arcade.View):
         def on_change(event):
             print(self.dropdown2.value)
         # do stuff here ok
-
-
-def main():
-    window = arcade.Window(resizable=True)
-    game = AssetSelector('Sprites')
-    window.show_view(game)
-    arcade.run()
-
-
-if __name__ == "__main__":
-    main()

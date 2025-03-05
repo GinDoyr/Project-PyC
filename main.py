@@ -4,8 +4,7 @@ from arcade.gui import (
     UIManager,
     UITextureButton,
     UIFlatButton,
-    UIBoxLayout,
-    UIView)
+    UIBoxLayout)
 import file_mngr.conf_mngr as conf
 from tkinter.filedialog import askopenfilename
 import shutil
@@ -14,14 +13,14 @@ import asset_selector
 
 
 win_title = "Project: PyC"
-settings = conf.load_settings()
+conf.load_settings()
 win_width = int(conf.set_settings("Settings", "win_width"))
 win_height = int(conf.set_settings("Settings", "win_height"))
 TEX_RED_BUTTON_NORMAL = arcade.load_texture(":resources:gui_basic_assets/button/red_normal.png")
 button_conf_norm = arcade.load_texture(":resources:gui_basic_assets/button/red_normal.png")
 TEX_RED_BUTTON_HOVER = arcade.load_texture(":resources:gui_basic_assets/button/red_hover.png")
 TEX_RED_BUTTON_PRESS = arcade.load_texture(":resources:gui_basic_assets/button/red_press.png")
-window = arcade.Window(win_width, win_height, win_title, resizable=True)
+window = arcade.Window(win_width, win_height, win_title)
 window.center_window()
 
 
@@ -215,7 +214,7 @@ class Main_menu(arcade.View):
             self.settings_buttons.visible = True
             self.menu_buttons.visible = False
 
-        @self.exit_main.event("on_click", "hover")
+        @self.exit_main.event("on_click")
         def on_click(event):
             print("closing game")
             window.close()
