@@ -23,7 +23,7 @@ class GameLoop(arcade.View):
 
         # sound
         self.curr_audio = None
-        self.bg_music = arcade.load_sound("assets/music/ULTRAKILL_OldCyberGrind.mp3", streaming=True)
+        self.bg_music = arcade.load_sound("assets/music/game_main/ULTRAKILL_OldCyberGrind.mp3", streaming=True)
 
         # flags
         self.bg_flag = False

@@ -7,6 +7,8 @@ config = configparser.ConfigParser()
 def check_path(path):
     return os.path.exists(path)
 
+def create_path(path):
+    return os.makedirs(path)
 
 def return_contents(path):
     return os.listdir(path)
@@ -45,7 +47,7 @@ def create_settings():
     config.add_section("Settings")
     config.set("Settings", "win_width", "1280")
     config.set("Settings", "win_height", "720")
-    config.set("Settings", "bg_music", "assets/music/cuboidd_[MC Detour].mp3")
+    config.set("Settings", "bg_music", "assets/audio/music/main menu/cuboidd_[MC Detour].mp3")
     config.set("Settings", "bg_volume", "0.5")
     config.set("Settings", "player_sprite", "assets/sprites/player/kestrel-cruiser-type-b-body.png")
     config.set("Settings", "pl_bul_sprite", "assets/sprites/entities/player_bullet.png")
