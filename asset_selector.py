@@ -1,13 +1,13 @@
 import arcade
 from arcade.gui import (UIManager, UIBoxLayout, UIDropdown, UIFlatButton, UITextureButton)
+from arcade.gui.experimental.scroll_area import UIScrollBar
+from arcade.gui.experimental import UIScrollArea
+import file_mngr.conf_mngr as conf
 
 
 class AssetSelector(arcade.View):
     def __init__(self, call, main_menu):
         super().__init__()
-
-        # menu save
-        self.main_menu = main_menu
 
         # call check
         if call == 'Sprites':
@@ -21,8 +21,14 @@ class AssetSelector(arcade.View):
             self.window.close()  # idk i'd rather just crash the game lol¯\_(ツ)_/¯
             exit()
 
+        # sound
+        self.curr_audio = None
+        self.bg_music = arcade.load_sound("assets/music/14. The World Machine.mp3", streaming=True)
+
         # gui ini
         self.ui = UIManager()
+
+        # top buttons
         self.anchor = self.ui.add(UIBoxLayout(vertical=False))
         self.dropdown1 = UIDropdown(
             default=list(dropdown_options.keys())[0], options=list(dropdown_options.keys()))
@@ -38,6 +44,7 @@ class AssetSelector(arcade.View):
         if self.anchor.left+child_width > wid:
             print('OUT THE WINDOW!! if this happened that means i was too lazy to make the rescalable window')
 
+        # bottom buttons
         self.anchor2 = self.ui.add(UIBoxLayout(vertical=False))
         self.save_button = self.anchor2.add(
             UIFlatButton(width=child_width//2, text='Save changes')
@@ -47,10 +54,26 @@ class AssetSelector(arcade.View):
         )
         self.anchor2.move(wid*2//3+(wid//3 - child_width)//2, 10)
 
+        # select box
+        self.vertical_list = UIBoxLayout(size_hint=(1, 0), space_between=1)
+        for i in conf.return_contents('assets/music'):
+            button = UIFlatButton(height=30, size_hint=(1, None), text=f"{i[:-4]}")
+            self.vertical_list.add(button)
+            button.on_click = self.selector_click
+
+        # scroll area
+        scale_y = (self.anchor.bottom-self.exit_button.height-30)/self.window.height
+        print(scale_y)
+        v_scroll_area = self.ui.add(UIBoxLayout(x=wid*2//3, y=self.exit_button.height + 20, vertical=False, size_hint=(1/3, scale_y)))
+        scroll_layout = v_scroll_area.add(UIScrollArea(size_hint=(1, 1)))
+        scroll_layout.with_border(color=arcade.uicolor.WHITE)
+        scroll_layout.add(self.vertical_list)
+        scroll_layout.invert_scroll = True
+
         # gui buttons calls
         @self.exit_button.event("on_click")
         def on_click(event):
-            self.window.show_view(self.main_menu)
+            self.window.show_view(main_menu)
 
         @self.dropdown1.event("on_change")
         def on_change(event):
@@ -60,15 +83,20 @@ class AssetSelector(arcade.View):
                 default=dropdown_options.get(self.dropdown1.value)[0], options=dropdown_options.get(self.dropdown1.value))
             self.anchor.add(self.dropdown2)
 
+    def selector_click(self, event):
+        print(event.source.text)
+
     def on_show_view(self):
         self.ui.enable()
+        self.curr_audio = self.bg_music.play(volume=0.05)
 
     def on_hide_view(self):
         self.ui.disable()
+        arcade.stop_sound(self.curr_audio)
 
     def on_draw(self):
         self.clear()
-        arcade.draw_line(self.window.width*2//3, 0, self.window.width*2//3, self.window.height, arcade.color.WHEAT, 1)
+        arcade.draw_line(self.window.width*2//3, 0, self.window.width*2//3, self.window.height, arcade.color.WHITE, 1)
         self.ui.draw()
 
     def on_update(self, delta_time):

@@ -18,9 +18,12 @@ class GameLoop(arcade.View):
 
         # misc
         self.clocker = arcade.clock.Clock()
-        self.window.set_mouse_visible(False)
         self.main_menu = main_menu
         self.mouse_x, self.mouse_y = self.window.center_x, self.window.center_y
+
+        # sound
+        self.curr_audio = None
+        self.bg_music = arcade.load_sound("assets/music/ULTRAKILL_OldCyberGrind.mp3", streaming=True)
 
         # flags
         self.bg_flag = False
@@ -107,6 +110,14 @@ class GameLoop(arcade.View):
             if entity.bottom > self.window.height or entity.top < 0 or entity.right < 0 or entity.left > self.window.width:
                 entity.remove_from_sprite_lists()
 
+    def on_show_view(self):
+        self.window.set_mouse_visible(False)
+        self.curr_audio = self.bg_music.play(volume=0.05)
+
+    def on_hide_view(self):
+        self.window.set_mouse_visible(True)
+        arcade.stop_sound(self.curr_audio)
+
     def on_draw(self):
         self.clear()
         self.sprite_list.draw()
@@ -134,7 +145,6 @@ class GameLoop(arcade.View):
     def on_key_press(self, key, key_modifiers):
         if key == arcade.key.ESCAPE:
             self.window.show_view(self.main_menu)
-            self.window.set_mouse_visible(True)
         if key == arcade.key.A:
             self.left_pressed = True
             self.update_player_speed()
@@ -171,13 +181,7 @@ class GameLoop(arcade.View):
         self.mouse_y = y
 
     def on_mouse_press(self, x, y, button, key_modifiers):
-        """
-        Called when the user presses a mouse button.
-        """
-        pass
+        self.shoot_flag = True
 
     def on_mouse_release(self, x, y, button, key_modifiers):
-        """
-        Called when a user releases a mouse button.
-        """
-        pass
+        self.shoot_flag = False

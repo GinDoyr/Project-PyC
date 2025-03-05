@@ -15,28 +15,28 @@ class MyView(UIView):
 
         # create a layout with two columns
         root = self.add_widget(UIAnchorLayout())
-        content_left = UIAnchorLayout(size_hint=(0.5, 1), x=window.center_x, y=window.center_y)
-        root.add(content_left, anchor_x="left", anchor_y="center")
+
         self.player1 = None
         self.player2 = None
 
         # create the list, which should be scrolled vertically
         self.vertical_list = UIBoxLayout(size_hint=(1, 0), space_between=1)
-        for i in conf.return_contents('assets/music'):
-            button = UIFlatButton(height=30, size_hint=(1, None), text=f"{i[:-4]}")
+        for i in range(50):
+            button = UIFlatButton(height=30, size_hint=(1, None), text=f"Button {i}")
             self.vertical_list.add(button)
             button.on_click = self.selector_click
 
         # the scroll area and the scrollbar are added to a box layout
         # so they are next to each other, this also reduces complexity for the layout
         # implementation
-        v_scroll_area = UIBoxLayout(vertical=False, size_hint=(0.8, 0.8))
-        content_left.add(v_scroll_area, anchor_x="center", anchor_y="center")
+        v_scroll_area = UIBoxLayout(vertical=False, size_hint=(0.5, 0.5))
+        root.add(v_scroll_area)
 
-        scroll_layout = v_scroll_area.add(UIScrollArea(size_hint=(1, 1)))
-        scroll_layout.with_border(color=arcade.uicolor.WHITE_CLOUDS)
-        scroll_layout.add(self.vertical_list)
-        v_scroll_area.add(UIScrollBar(scroll_layout))
+        self.scroll_layout = v_scroll_area.add(UIScrollArea(size_hint=(1, 1)))
+        self.scroll_layout.with_border(color=arcade.uicolor.WHITE_CLOUDS)
+        self.scroll_layout.add(self.vertical_list)
+        self.scroll_layout.invert_scroll = True
+        v_scroll_area.add(UIScrollBar(self.scroll_layout))
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.ESCAPE:
@@ -45,7 +45,6 @@ class MyView(UIView):
         return False
 
     def selector_click(self, event):
-        print("click!")
         print(event.source.text)
 
     def on_update(self, delta_time):
@@ -70,7 +69,6 @@ class MyView(UIView):
         #     if arcade.Sound.is_complete(player2):
         #         player2 = arcade.Sound
         pass
-
 
 def main():
     window.show_view(MyView())

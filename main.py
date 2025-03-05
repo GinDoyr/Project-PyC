@@ -141,6 +141,9 @@ class Main_menu(arcade.View):
     def on_hide_view(self) -> None:
         self.ui.disable()
         self.menu_exists = True
+        if self.bg_flag:
+            arcade.stop_sound(self.curr_audio)
+            self.bg_flag = False
 
     # def resize_screen(self, change_x: int, change_y: int, move_x: int, move_y: int, move_loc: str,
     #                   method: str = 'middle', speed: int = 1) -> None:
