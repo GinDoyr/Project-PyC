@@ -58,10 +58,11 @@ class AssetSelector(arcade.View):
         self.__exit_button = self.__botright.add(UIFlatButton(width=child_width//2, text='Back to main menu'))
 
         # bottom left buttons
-        self.__botleft = self.__ui.add(UIBoxLayout(vertical=False))
+        self.__botleft = self.__ui.add(UIBoxLayout(y=10, vertical=False))
         self.__load = self.__botleft.add(UIFlatButton(width=child_width//2, text='Load new'))
         self.__remove = self.__botleft.add(UIFlatButton(width=child_width//2, text='Remove selected'))
         self.__bg_button = self.__botleft.add(UIFlatButton(width=child_width//2, text='Stop music'))
+        self.__botleft.move(wid*2//3 - child_width*3//2 - 10)
         # dont forget the player for the music! also do the normal resizing and position
 
         # select box
@@ -112,10 +113,15 @@ class AssetSelector(arcade.View):
         # sprite list
         self.__sprite_list = arcade.SpriteList()
         self.__hb_flag = False
+        self.__scale_y = round(((
+                                            self.__topright.bottom - self.__exit_button.height - 30) / self.window.height) * self.window.height) + self.__exit_button.height + 19
+        if call == 'Sprites':
+            sprite = arcade.Sprite(conf.set_settings('Settings', 'player_sprite'))
+            sprite.position = (self.window.width // 3, (self.__scale_y + self.__exit_button.height + 21) // 2)
+            self.__sprite_list.append(sprite)
 
         # misc
         self.__call = call
-        self.__scale_y = round(((self.__topright.bottom - self.__exit_button.height - 30) / self.window.height) * self.window.height) + self.__exit_button.height + 19
         self.__previous_option1 = ''
         self.__previous_option2 = ''
 
