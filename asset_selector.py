@@ -1,7 +1,24 @@
 import arcade
 from arcade.gui import (UIManager, UIBoxLayout, UIDropdown, UIFlatButton, UISlider, UILabel, UITextureButton)
 from arcade.gui.experimental import UIScrollArea
+
+import file_mngr.conf_mngr
 import file_mngr.conf_mngr as conf
+
+
+dicts = {'Sprites': {'Player': ['Sprite', 'Bullet', 'Crosshair'],
+                   'Enemies': ['Enemy1', 'Enemy1 explosion', 'Enemy2', 'Enemy2 fire', 'Enemy3',
+                               'Enemy3 fire', 'Boss', 'Boss charge', 'Boss laser'],
+                    'Other': ['Background', 'Walls', 'Lives']},
+         'Audio': {'Player': ['Bullet', 'Dash', 'Death'],
+                   'Enemies': ['Enemy1 rush', 'Enemy1 explosion', 'Enemy1 death', 'Enemy2 death',
+                               'Enemy3 death', 'Boss charge', 'Boss fire', 'Boss death'],
+                   'Other': ['Live lost', 'Live regained'],
+                   'Music': ['Main menu', 'Game', 'Boss']}}
+
+
+def return_assets_dicts():
+    return dicts
 
 
 class AssetSelector(arcade.View):
@@ -10,16 +27,9 @@ class AssetSelector(arcade.View):
 
         # call check
         if call == 'Sprites':
-            dropdown_options = {'Player': ['Sprite', 'Bullet', 'Crosshair'],
-                                'Enemies': ['Enemy1', 'Enemy1 explosion', 'Enemy2', 'Enemy2 fire', 'Enemy3',
-                                            'Enemy3 fire', 'Boss', 'Boss charge', 'Boss laser'],
-                                'Other': ['Background', 'Walls', 'Lives']}
+            dropdown_options = dicts.get('Sprites')
         elif call == 'Audio':
-            dropdown_options = {'Player': ['Bullet', 'Dash', 'Death'],
-                                'Enemies': ['Enemy1 rush', 'Enemy1 explosion', 'Enemy1 death', 'Enemy2 death',
-                                            'Enemy3 death', 'Boss charge', 'Boss fire', 'Boss death'],
-                                'Other': ['Live lost', 'Live regained'],
-                                'Music': ['Main menu', 'Game', 'Boss']}
+            dropdown_options = dicts.get('Audio')
         else:
             print('INCORRECT CALL!')
             self.window.close()  # idk i'd rather just crash the game lol¯\_(ツ)_/¯
@@ -69,7 +79,7 @@ class AssetSelector(arcade.View):
         if call == 'Audio':
             self.__player = None
             self.__cur_sound = None
-            self.__finish_flag = False
+            self.__pause_flag = False
             self.__volume = 0.5
             self.__audio_btns = self.__ui.add(UIBoxLayout(x=10, y=10, vertical=False))
             self.__ps_res_btn = self.__audio_btns.add(UIFlatButton(text='Waiting...'))
@@ -82,23 +92,25 @@ class AssetSelector(arcade.View):
             def on_click(event):
                 if self.__player is not None:
                     if arcade.Sound.is_playing(self, self.__player):
-                        print('playing, pausing')
+                        print('pausing')
+                        self.__pause_flag = True
                         self.__player.pause()
                         self.__ps_res_btn.text = 'Resume'
                     elif not arcade.Sound.is_playing(self, self.__player):
-                        print('not playing, resuming')
-                        if self.__finish_flag:
-                            print('bah') # redo this check pls
+                        print('resuming')
+                        if not self.__pause_flag:
+                            print('restarting audio as it finished!')
                             self.__player = self.__cur_sound.play(volume=self.__volume)
                         else:
                             self.__player.play()
+                            self.__pause_flag = False
                         self.__ps_res_btn.text = 'Pause'
 
             @self.__volume_slider.event('on_change')
             def on_change(event):
                 self.__volume = round(self.__volume_slider.value) / 100
                 if self.__player is not None:
-                    self.__player.volume = round(self.__volume)
+                    self.__player.volume = self.__volume
                 self.__volume_text.text = f'Volume: {int(self.__volume * 100)}%'
 
         # select box
@@ -153,7 +165,7 @@ class AssetSelector(arcade.View):
         self.__hb_flag = False
         self.__scale_y = round(((self.__topright.bottom - self.__exit_button.height - 30) / self.window.height) * self.window.height) + self.__exit_button.height + 19
         if call == 'Sprites':
-            sprite = arcade.Sprite(conf.set_settings('Settings', 'player_sprite'))
+            sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'))
             sprite.position = (self.window.width // 3, (self.__scale_y + self.__exit_button.height + 21) // 2)
             self.__sprite_list.append(sprite)
 
@@ -171,7 +183,7 @@ class AssetSelector(arcade.View):
         else:
             if self.__player is not None:
                 arcade.stop_sound(self.__player)
-            self.__cur_sound = arcade.load_sound(f'assets/audio/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}')
+            self.__cur_sound = arcade.load_sound(f'assets/audio/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}', streaming=True)
             print(f'launching audio at {self.__volume} volume')
             self.__player = self.__cur_sound.play(volume=self.__volume)
             self.__ps_res_btn.text = 'Pause'
@@ -182,9 +194,10 @@ class AssetSelector(arcade.View):
 
     def on_hide_view(self):
         self.__ui.disable()
-        if self.__player is not None:
-            arcade.stop_sound(self.__player)
-            self.__player = None
+        if self.__call == 'Audio':
+            if self.__player is not None:
+                arcade.stop_sound(self.__player)
+                self.__player = None
         arcade.stop_sound(self.__curr_audio)
         self.__curr_audio = None # just to be safe
 
@@ -211,12 +224,10 @@ class AssetSelector(arcade.View):
                     button.on_click = self.__selector_click
                 self.__previous_option2 = self.__dropdown2.value
 
-        if self.__player is not None:
-            if not self.__cur_sound.is_playing(self.__player):
-                self.__ps_res_btn.text = 'Resume'
-            elif self.__cur_sound.is_complete(self.__player):
-                self.__ps_res_btn.text = 'Resume'
-                self.__finish_flag = True
+        if self.__call == 'Audio':
+            if self.__player is not None:
+                if not self.__cur_sound.is_playing(self.__player) and not self.__pause_flag:
+                    self.__ps_res_btn.text = 'Resume'
 
         if not self.__bg_music.is_playing(self.__curr_audio) and not self.__pause_bg:
             self.__curr_audio = self.__bg_music.play(volume=0.05)

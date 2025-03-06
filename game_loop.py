@@ -38,7 +38,7 @@ class GameLoop(arcade.View):
 
         # sound
         self.curr_audio = None
-        self.bg_music = arcade.load_sound("assets/audio/music/game/ULTRAKILL_OldCyberGrind.mp3", streaming=True)
+        self.bg_music = arcade.load_sound(conf.set_settings('Audio','music_game'), streaming=True)
 
         # flags
         self.bg_flag = False
@@ -53,10 +53,10 @@ class GameLoop(arcade.View):
 
         # player stuff
         # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
-        self.player_sprite = conf.set_settings("Settings", "player_sprite")
-        self.pl_bullet_sprite = conf.set_settings("Settings", "pl_bul_sprite")
-        self.pl_bullet_audio = conf.set_settings("Settings", "pl_bul_audio")
-        self.pl_crsh_sprite = conf.set_settings("Settings", "pl_crsh_sprite")
+        self.player_sprite = conf.set_settings("Sprites", "player_sprite")
+        self.pl_bullet_sprite = conf.set_settings("Sprites", "player_bullet")
+        self.pl_bullet_audio = conf.set_settings("Audio", "player_bullet")
+        self.pl_crsh_sprite = conf.set_settings("Sprites", "player_crosshair")
         self.pl_crsh = arcade.Sprite(self.pl_crsh_sprite)
         self.pl_bullet_audio_compl = arcade.load_sound(self.pl_bullet_audio)
         self.pl_bullet_speed = 10

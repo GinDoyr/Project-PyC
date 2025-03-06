@@ -35,7 +35,7 @@ class Main_menu(arcade.View):
 
         # sound
         self.curr_audio = None
-        self.bg_music_pre = conf.set_settings("Settings", "bg_music")
+        self.bg_music_pre = conf.set_settings("Audio", "music_main menu")
         self.bg_music = arcade.load_sound(self.bg_music_pre)
         self.bg_volume = float(conf.set_settings("Settings", "bg_volume"))
         self.sfx_volume = float(conf.set_settings("Settings", "sfx_volume"))

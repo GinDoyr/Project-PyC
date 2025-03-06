@@ -1,5 +1,6 @@
 import os
 import configparser
+from asset_selector import return_assets_dicts
 
 config = configparser.ConfigParser()
 
@@ -26,6 +27,39 @@ def update_setting(section, setting, value):
         config.write(config_file)
 
 
+def create_sprites_and_audio_paths(dct: dict):
+    '''
+    this is made specifically for setting sprites and audio paths from a dictionary in asset_selector
+    :param dct: dict, where the key is 'Sprites' or 'Audio', with values being other dicts with their relative items
+    :return: None
+    '''
+    change_flag = False
+    for section in dct.keys():  # Sprites or Audio
+        for setting in dct.get(section):  # Keys for their relative dicts
+            for value in dct.get(section).get(setting):
+                try:
+                    config.read('settings/settings.ini')
+                    config.get(section, f'{setting.lower()}_{value.lower()}')
+                except:
+                    config.read('settings/settings.ini')
+                    found_flag = False
+                    if not change_flag:
+                        change_flag = True
+                    for i in return_contents(f'assets/{section.lower()}/{setting.lower()}/{value.lower()}'):
+                        if i.startswith('[DEFAULT]'):
+                            print(f"setting {section}, '{setting.lower()}_{value.lower()}' to 'assets/{section.lower()}/{setting.lower()}/{value.lower()}/{i}'")
+                            config.set(section, f'{setting.lower()}_{value.lower()}',
+                                       f'assets/{section.lower()}/{setting.lower()}/{value.lower()}/{i}')
+                            found_flag = True
+                            break
+                    if not found_flag:
+                        print(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
+                        config.set(section, f'{setting.lower()}_{value.lower()}', 'None')
+    if change_flag:
+        with open("settings/settings.ini", "w") as c_file:
+            config.write(c_file)
+
+
 def load_settings():
     if not os.path.isfile("settings/settings.ini"):
         print('settings not in dir!')
@@ -34,7 +68,7 @@ def load_settings():
     try:
         config.read("settings/settings.ini")
     except:
-        print('settings corrupted, setting to default...')
+        print('settings corrupted, setting to default...')  # i dont really know what should you do to get here but whatever, failsafe rulez
         os.remove('settings/setting.ini')
         create_settings()
         print('default settings set')
@@ -50,19 +84,17 @@ def create_settings():
     config.add_section("Settings")
     config.set("Settings", "win_width", "1280")
     config.set("Settings", "win_height", "720")
-    config.set("Settings", "bg_music", "assets/audio/music/main menu/TUNIC To Far Shores.mp3")
     config.set("Settings", "bg_volume", "0.5")
     config.set("Settings", "sfx_volume", "0.5")
-    config.set("Settings", "player_sprite", "assets/sprites/player/sprite/kestrel-cruiser-type-b-body.png")
-    config.set("Settings", "pl_bul_sprite", "assets/sprites/player/bullet/player_bullet.png")
-    config.set("Settings", "pl_bul_audio", "assets/audio/player/bullet/pew.wav")
-    config.set("Settings", "pl_crsh_sprite", "assets/sprites/player/crosshair/crosshair.png")
     config.add_section("Controls")
     config.set("Controls", "up", "W")
     config.set("Controls", "left", "A")
     config.set("Controls", "down", "S")
     config.set("Controls", "right", "D")
     config.set("Controls", "shoot", "SPACE")
+    config.add_section("Audio")
+    config.add_section("Sprites")
+    create_sprites_and_audio_paths(return_assets_dicts())
 
     with open("settings/settings.ini", "w") as c_file:
         config.write(c_file)
