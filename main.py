@@ -6,8 +6,6 @@ from arcade.gui import (
     UIFlatButton,
     UIBoxLayout)
 import file_mngr.conf_mngr as conf
-from tkinter.filedialog import askopenfilename
-import shutil
 import game_loop
 import asset_selector
 
@@ -77,57 +75,25 @@ class Main_menu(arcade.View):
 
         # settings
         self.settings_buttons = self.ui.add(UIBoxLayout())
-        self.audio_conf = self.settings_buttons.add(
-            UIFlatButton(text="Audio")
-        )
-        self.contrl_conf = self.settings_buttons.add(
-            UIFlatButton(text="Controls")
-        )
-        self.assets_conf = self.settings_buttons.add(
-            UIFlatButton(text="Assets")
-        )
-        self.back_conf = self.settings_buttons.add(
-            UIFlatButton(text="Back")
-        )
+        self.audio_conf = self.settings_buttons.add(UIFlatButton(text="Audio"))
+        self.contrl_conf = self.settings_buttons.add(UIFlatButton(text="Controls"))
+        self.assets_conf = self.settings_buttons.add(UIFlatButton(text="Assets"))
+        self.back_conf = self.settings_buttons.add(UIFlatButton(text="Back"))
 
         # audio settings
         self.audio_buttons = self.ui.add(UIBoxLayout())
-        self.volume_up = self.audio_buttons.add(
-            UIFlatButton(text="Volume +10")
-        )
-        self.volume_text = self.audio_buttons.add(
-            UIFlatButton(text=f"Volume: {int(self.bg_volume*100)}")
-        )
-        self.volume_down = self.audio_buttons.add(
-            UIFlatButton(text="Volume -10")
-        )
-        self.confirm_vol = self.audio_buttons.add(
-            UIFlatButton(text="Save changes", multiline=True)
-        )
-        self.back_vol = self.audio_buttons.add(
-            UIFlatButton(text="Back")
-        )
-        self.load_bg = self.audio_buttons.add(
-            UIFlatButton(text="Load bg music", multiline=True)
-        )
-        self.select_bg = self.audio_buttons.add(
-            UIFlatButton(text="Select bg music", multiline=True)
-        )
-        self.bg_curr = self.audio_buttons.add(
-            UIFlatButton(text=f"Current music: {str(self.bg_music_pre)[self.bg_music_pre.rfind('/')+1:-4]}", multiline=True)
-        )
+        self.volume_up = self.audio_buttons.add(UIFlatButton(text="Volume +10"))
+        self.volume_text = self.audio_buttons.add(UIFlatButton(text=f"Volume: {int(self.bg_volume*100)}"))
+        self.volume_down = self.audio_buttons.add(UIFlatButton(text="Volume -10"))
+        self.confirm_vol = self.audio_buttons.add(UIFlatButton(text="Save changes", multiline=True))
+        self.back_vol = self.audio_buttons.add(UIFlatButton(text="Back"))
+        self.bg_curr = self.audio_buttons.add(UIFlatButton(text=f"Current music: {str(self.bg_music_pre)[self.bg_music_pre.rfind('/')+1:-4]}", multiline=True))
 
         # assets selection
         self.assets_buttons = self.ui.add(UIBoxLayout())
-        self.audio_assets = self.assets_buttons.add(
-            UIFlatButton(text="Audio")
-        )
-        self.sprites_assets = self.assets_buttons.add(
-            UIFlatButton(text="Sprites")
-        )
-        self.back_assets = self.assets_buttons.add(
-            UIFlatButton(text="Back")
-        )
+        self.audio_assets = self.assets_buttons.add(UIFlatButton(text="Audio"))
+        self.sprites_assets = self.assets_buttons.add(UIFlatButton(text="Sprites"))
+        self.back_assets = self.assets_buttons.add(UIFlatButton(text="Back"))
 
         # button flags
         self.settings_buttons.visible = False
@@ -135,73 +101,7 @@ class Main_menu(arcade.View):
         self.assets_buttons.visible = False
         self.volume_text.disabled = True
 
-    def on_show_view(self) -> None:
-        self.ui.enable()
-
-    def on_hide_view(self) -> None:
-        self.ui.disable()
-        self.menu_exists = True
-        if self.bg_flag:
-            arcade.stop_sound(self.curr_audio)
-            self.bg_flag = False
-
-    # def resize_screen(self, change_x: int, change_y: int, move_x: int, move_y: int, move_loc: str,
-    #                   method: str = 'middle', speed: int = 1) -> None:
-    #     """
-    #     :param change_x: change the resulting window width
-    #     :param change_y: change the resulting window height
-    #     :param move_x: move the window by x
-    #     :param move_y:move the window by y
-    #     :param move_loc: top, down, left, right. f.e: if you choose left, the screen moves from the right to the left
-    #     :param method: how should the resize happen
-    #     :param speed: how fast should the resize happen
-    #     :return: hopefully a working resize function
-    #     """
-    #     pass
-
-    def on_draw(self):
-        self.clear()
-
-        if self.resize_flag and self.resize_count <= 24:
-            window.width += 4
-            window.height -= 4
-            self.resize_count += 1
-        elif self.resize_count >= 25 and self.resize_count != 50:
-            if self.resize_count == 25:
-                print(window.get_size())
-                print(window.get_location())
-            window.width -= 4
-            window.height += 4
-            self.menu_buttons.move(-4, 0) # to move buttons you have to move the anchor, not its elements! either move the whole set of buttons or do each button with their own anchor
-            self.clear()
-            window.set_location(window.get_location()[0] + 4, window.get_location()[1])
-            self.resize_count += 1
-            if self.resize_count == 50:
-                print(window.get_size())
-                print(window.get_location())
-        else:
-            self.resize_flag = False
-            self.resize_count = 0
-
-        if self.menu_exists:
-            self.menu_buttons.center_on_screen()
-            self.settings_buttons.center_on_screen()
-            self.audio_buttons.center_on_screen()
-            self.assets_buttons.center_on_screen()
-            self.menu_exists = False
-
-        self.ui.draw()
-
-        # this finally centers the buttons properly. my god
-        if not self.menu_center_flag:
-            self.menu_buttons.center_on_screen()
-            self.settings_buttons.center_on_screen()
-            self.audio_buttons.center_on_screen()
-            self.assets_buttons.center_on_screen()
-            self.menu_center_flag = True
-
-    def on_update(self, delta_time):
-
+        # gui defs
         # main menu buttons
         @self.start.event("on_click")
         def on_click(event):
@@ -270,19 +170,6 @@ class Main_menu(arcade.View):
             self.audio_buttons.visible = False
             self.settings_buttons.visible = True
 
-        @self.load_bg.event("on_click")
-        def on_click(event):
-            filename = askopenfilename()
-            try:
-                if not conf.check_path(f'assets/music/{filename[filename.rfind("/")+1:]}') and (filename.endswith('.mp3') or filename.endswith('.wav')):
-                    shutil.copy(filename, 'assets/music')
-                    print('loaded')
-                else:
-                    print("either alr loaded or incorrect file type")
-            except Exception as e:
-                print("ERROR! idk what honestly: ", e)
-            print(filename[filename.rfind("/")+1:], filename)
-
         # assets buttons
         @self.audio_assets.event("on_click")
         def on_click(event):
@@ -299,6 +186,76 @@ class Main_menu(arcade.View):
             self.assets_buttons.visible = False
             self.settings_buttons.visible = True
 
+    def on_show_view(self) -> None:
+        self.ui.enable()
+
+    def on_hide_view(self) -> None:
+        self.ui.disable()
+        self.menu_exists = True
+        if self.bg_flag:
+            arcade.stop_sound(self.curr_audio)
+            self.bg_flag = False
+
+    # def resize_screen(self, change_x: int, change_y: int, move_x: int, move_y: int, move_loc: str,
+    #                   method: str = 'middle', speed: int = 1) -> None:
+    #     """
+    #     :param change_x: change the resulting window width
+    #     :param change_y: change the resulting window height
+    #     :param move_x: move the window by x
+    #     :param move_y:move the window by y
+    #     :param move_loc: top, down, left, right. f.e: if you choose left, the screen moves from the right to the left
+    #     :param method: how should the resize happen
+    #     :param speed: how fast should the resize happen
+    #     :return: hopefully a working resize function
+    #     """
+    #     pass
+
+    def on_draw(self):
+        self.clear()
+
+        if self.resize_flag and self.resize_count <= 24:
+            window.width += 4
+            window.height -= 4
+            self.resize_count += 1
+        elif self.resize_count >= 25 and self.resize_count != 50:
+            if self.resize_count == 25:
+                print(window.get_size())
+                print(window.get_location())
+            window.width -= 4
+            window.height += 4
+            self.menu_buttons.move(-4, 0) # to move buttons you have to move the anchor, not its elements! either move the whole set of buttons or do each button with their own anchor
+            self.clear()
+            window.set_location(window.get_location()[0] + 4, window.get_location()[1])
+            self.resize_count += 1
+            if self.resize_count == 50:
+                print(window.get_size())
+                print(window.get_location())
+        else:
+            self.resize_flag = False
+            self.resize_count = 0
+
+        if self.menu_exists:
+            self.menu_buttons.center_on_screen()
+            self.settings_buttons.center_on_screen()
+            self.audio_buttons.center_on_screen()
+            self.assets_buttons.center_on_screen()
+            self.menu_exists = False
+
+        self.ui.draw()
+
+        # this finally centers the buttons properly. my god
+        if not self.menu_center_flag:
+            self.menu_buttons.center_on_screen()
+            self.settings_buttons.center_on_screen()
+            self.audio_buttons.center_on_screen()
+            self.assets_buttons.center_on_screen()
+            self.menu_center_flag = True
+
+    def on_update(self, delta_time):
+        if self.bg_flag:
+            if not self.bg_music.is_playing(self.curr_audio): # tried is_complete here, didnt work for some reason ¯\_(ツ)_/¯
+                self.curr_audio = self.bg_music.play(volume=self.bg_volume)
+
     def on_key_press(self, key, key_modifiers):
         """
         Called whenever a key on the keyboard is pressed.
@@ -310,8 +267,7 @@ class Main_menu(arcade.View):
                 arcade.stop_sound(self.curr_audio)
                 self.bg_flag = False
             elif not self.bg_flag:
-                self.curr_audio = self.bg_music.play()
-                self.curr_audio.volume = self.bg_volume
+                self.curr_audio = self.bg_music.play(volume=self.bg_volume)
                 self.bg_flag = True
 
         if key == arcade.key.H:

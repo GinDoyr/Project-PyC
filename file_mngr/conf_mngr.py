@@ -7,8 +7,10 @@ config = configparser.ConfigParser()
 def check_path(path):
     return os.path.exists(path)
 
+
 def create_path(path):
     return os.makedirs(path)
+
 
 def return_contents(path):
     return os.listdir(path)
@@ -32,7 +34,8 @@ def load_settings():
     try:
         config.read("settings/settings.ini")
     except:
-        print('settings corrupted, settings to default...')
+        print('settings corrupted, setting to default...')
+        os.remove('settings/setting.ini')
         create_settings()
         print('default settings set')
     print('loading settings!')
@@ -47,12 +50,12 @@ def create_settings():
     config.add_section("Settings")
     config.set("Settings", "win_width", "1280")
     config.set("Settings", "win_height", "720")
-    config.set("Settings", "bg_music", "assets/audio/music/main menu/cuboidd_[MC Detour].mp3")
+    config.set("Settings", "bg_music", "assets/audio/music/main menu/TUNIC To Far Shores.mp3")
     config.set("Settings", "bg_volume", "0.5")
-    config.set("Settings", "player_sprite", "assets/sprites/player/kestrel-cruiser-type-b-body.png")
-    config.set("Settings", "pl_bul_sprite", "assets/sprites/entities/player_bullet.png")
-    config.set("Settings", "pl_bul_audio", "assets/sounds/pew.wav")
-    config.set("Settings", "pl_crsh_sprite", "assets/sprites/player/crosshair.png")
+    config.set("Settings", "player_sprite", "assets/sprites/player/sprite/kestrel-cruiser-type-b-body.png")
+    config.set("Settings", "pl_bul_sprite", "assets/sprites/player/bullet/player_bullet.png")
+    config.set("Settings", "pl_bul_audio", "assets/audio/player/bullet/pew.wav")
+    config.set("Settings", "pl_crsh_sprite", "assets/sprites/player/crosshair/crosshair.png")
     config.add_section("Controls")
     config.set("Controls", "up", "W")
     config.set("Controls", "left", "A")

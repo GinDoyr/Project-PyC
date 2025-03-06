@@ -6,6 +6,21 @@ import player
 import math
 
 
+# look into this on how to do animations
+# Load animation for the sprite widget
+# frame_textures = []
+# for i in range(8):
+#     tex = arcade.load_texture(f":resources:images/animated_characters/female_adventurer/femaleAdventurer_walk{i}.png")
+#     frame_textures.append(tex)
+# TEX_ANIMATED_CHARACTER = arcade.TextureAnimation([arcade.TextureKeyframe(frame) for frame in frame_textures])
+# sprite = arcade.TextureAnimationSprite(animation=TEX_ANIMATED_CHARACTER)
+# sprite.scale = 0.5
+# sprite_row = box.add(UIBoxLayout(vertical=False, size_hint=(1, 0.1)))
+# sprite_row.add(
+#     UILabel("UISpriteWidget", font_name=DETAILS_FONT, font_size=16, size_hint=(0.3, 0))
+# )
+# sprite_row.add(UISpriteWidget(sprite=sprite, width=sprite.width, height=sprite.height))
+
 def rotate_around_point(sprite, point, degrees):
     sprite.position = rotate_point(
         sprite.center_x, sprite.center_y,
@@ -23,7 +38,7 @@ class GameLoop(arcade.View):
 
         # sound
         self.curr_audio = None
-        self.bg_music = arcade.load_sound("assets/music/game_main/ULTRAKILL_OldCyberGrind.mp3", streaming=True)
+        self.bg_music = arcade.load_sound("assets/audio/music/game/ULTRAKILL_OldCyberGrind.mp3", streaming=True)
 
         # flags
         self.bg_flag = False
