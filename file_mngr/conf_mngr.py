@@ -52,6 +52,7 @@ def create_settings():
     config.set("Settings", "win_height", "720")
     config.set("Settings", "bg_music", "assets/audio/music/main menu/TUNIC To Far Shores.mp3")
     config.set("Settings", "bg_volume", "0.5")
+    config.set("Settings", "sfx_volume", "0.5")
     config.set("Settings", "player_sprite", "assets/sprites/player/sprite/kestrel-cruiser-type-b-body.png")
     config.set("Settings", "pl_bul_sprite", "assets/sprites/player/bullet/player_bullet.png")
     config.set("Settings", "pl_bul_audio", "assets/audio/player/bullet/pew.wav")

@@ -4,7 +4,9 @@ from arcade.gui import (
     UIManager,
     UITextureButton,
     UIFlatButton,
-    UIBoxLayout)
+    UIBoxLayout,
+    UISlider,
+    UILabel)
 import file_mngr.conf_mngr as conf
 import game_loop
 import asset_selector
@@ -36,6 +38,7 @@ class Main_menu(arcade.View):
         self.bg_music_pre = conf.set_settings("Settings", "bg_music")
         self.bg_music = arcade.load_sound(self.bg_music_pre)
         self.bg_volume = float(conf.set_settings("Settings", "bg_volume"))
+        self.sfx_volume = float(conf.set_settings("Settings", "sfx_volume"))
 
         # flags
         self.bg_flag = False
@@ -75,6 +78,7 @@ class Main_menu(arcade.View):
 
         # settings
         self.settings_buttons = self.ui.add(UIBoxLayout())
+        self.video_conf = self.settings_buttons.add(UIFlatButton(text='Graphics'))
         self.audio_conf = self.settings_buttons.add(UIFlatButton(text="Audio"))
         self.contrl_conf = self.settings_buttons.add(UIFlatButton(text="Controls"))
         self.assets_conf = self.settings_buttons.add(UIFlatButton(text="Assets"))
@@ -82,12 +86,12 @@ class Main_menu(arcade.View):
 
         # audio settings
         self.audio_buttons = self.ui.add(UIBoxLayout())
-        self.volume_up = self.audio_buttons.add(UIFlatButton(text="Volume +10"))
-        self.volume_text = self.audio_buttons.add(UIFlatButton(text=f"Volume: {int(self.bg_volume*100)}"))
-        self.volume_down = self.audio_buttons.add(UIFlatButton(text="Volume -10"))
+        self.mus_text = self.audio_buttons.add(UILabel(text=f'Music: {int(self.bg_volume * 100)}%'))
+        self.mus_slider = self.audio_buttons.add(UISlider(value=self.bg_volume*100, width=250))
+        self.sfx_text = self.audio_buttons.add(UILabel(text=f'Sound effects: {int(self.sfx_volume * 100)}%'))
+        self.sfx_slider = self.audio_buttons.add(UISlider(value=self.sfx_volume*100, width=250))
         self.confirm_vol = self.audio_buttons.add(UIFlatButton(text="Save changes", multiline=True))
         self.back_vol = self.audio_buttons.add(UIFlatButton(text="Back"))
-        self.bg_curr = self.audio_buttons.add(UIFlatButton(text=f"Current music: {str(self.bg_music_pre)[self.bg_music_pre.rfind('/')+1:-4]}", multiline=True))
 
         # assets selection
         self.assets_buttons = self.ui.add(UIBoxLayout())
@@ -99,7 +103,6 @@ class Main_menu(arcade.View):
         self.settings_buttons.visible = False
         self.audio_buttons.visible = False
         self.assets_buttons.visible = False
-        self.volume_text.disabled = True
 
         # gui defs
         # main menu buttons
@@ -123,6 +126,10 @@ class Main_menu(arcade.View):
             window.close()
 
         # settings buttons
+        @self.video_conf.event("on_click")
+        def on_click(event):
+            print('graphics WIP')
+
         @self.audio_conf.event("on_click")
         def on_click(event):
             self.settings_buttons.visible = False
@@ -131,7 +138,7 @@ class Main_menu(arcade.View):
         @self.contrl_conf.event("on_click")
         def on_click(event):
             # self.settings_buttons.visible = False
-            print('controls')
+            print('controls WIP')
 
         @self.assets_conf.event("on_click")
         def on_click(event):
@@ -144,26 +151,23 @@ class Main_menu(arcade.View):
             self.menu_buttons.visible = True
 
         # audio buttons
-        @self.volume_down.event("on_click") #try a slider for the volume! there was a widget for it, look up in the examples GUI Widget Gallery
-        def on_click(event):
-            if round(self.bg_volume, 1) > 0:
-                self.bg_volume = round(self.bg_volume - 0.1, 1)
-                if self.curr_audio is not None:
-                    self.curr_audio.volume = round(self.curr_audio.volume - 0.1, 1)
-                self.volume_text.text = f"Volume: {int(self.bg_volume*100)}"
+        @self.mus_slider.event('on_change')
+        def on_change(event):
+            self.bg_volume = round(self.mus_slider.value)/100
+            if self.curr_audio is not None:
+                self.curr_audio.volume = round(self.bg_volume)
+            self.mus_text.text = f'Music: {int(self.bg_volume * 100)}%'
 
-        @self.volume_up.event("on_click")
-        def on_click(event):
-            if round(self.bg_volume, 1) < 1:
-                self.bg_volume = round(self.bg_volume + 0.1, 1)
-                if self.curr_audio is not None:
-                    self.curr_audio.volume = round(self.curr_audio.volume + 0.1, 1)
-                self.volume_text.text = f"Volume: {int(self.bg_volume*100)}"
+        @self.sfx_slider.event('on_change')
+        def on_change(event):
+            self.sfx_volume = round(self.sfx_slider.value)/100
+            self.sfx_text.text = f'Sound effects: {int(self.sfx_volume * 100)}%'
 
         @self.confirm_vol.event("on_click")
         def on_click(event):
             conf.update_setting("Settings", "bg_volume", str(self.bg_volume))
-            print('volume saved')
+            conf.update_setting("Settings", "sfx_volume", str(self.sfx_volume))
+            print(f'volume saved to {self.bg_volume}, sfx saved to {self.sfx_volume}')
 
         @self.back_vol.event("on_click")
         def on_click(event):
