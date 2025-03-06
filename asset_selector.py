@@ -137,7 +137,8 @@ class AssetSelector(arcade.View):
 
     def on_hide_view(self):
         self.__ui.disable()
-        arcade.stop_sound(self.__player)
+        if self.__player is not None:
+            arcade.stop_sound(self.__player)
         arcade.stop_sound(self.__curr_audio)
 
     def on_draw(self):
