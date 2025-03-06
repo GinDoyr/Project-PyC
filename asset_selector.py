@@ -1,5 +1,5 @@
 import arcade
-from arcade.gui import (UIManager, UIBoxLayout, UIDropdown, UIFlatButton, UITextureButton)
+from arcade.gui import (UIManager, UIBoxLayout, UIDropdown, UIFlatButton, UISlider, UILabel, UITextureButton)
 from arcade.gui.experimental import UIScrollArea
 import file_mngr.conf_mngr as conf
 
@@ -32,8 +32,8 @@ class AssetSelector(arcade.View):
 
         # sound
         self.__curr_audio = None # for some reason i decided to private all the stuff here, thought it might be better to do like this instead of leaving all in public?
-        self.__player = None
         self.__bg_music = arcade.load_sound("assets/audio/music/misc/14. The World Machine.mp3", streaming=True)
+        self.__pause_bg = False
 
         # gui ini
         self.__ui = UIManager()
@@ -64,6 +64,42 @@ class AssetSelector(arcade.View):
         self.__bg_button = self.__botleft.add(UIFlatButton(width=child_width//2, text='Stop music'))
         self.__botleft.move(wid*2//3 - child_width*3//2 - 10)
         # dont forget the player for the music! also do the normal resizing and position
+
+        # bottom audio buttons and some ini
+        if call == 'Audio':
+            self.__player = None
+            self.__cur_sound = None
+            self.__finish_flag = False
+            self.__volume = 0.5
+            self.__audio_btns = self.__ui.add(UIBoxLayout(x=10, y=10, vertical=False))
+            self.__ps_res_btn = self.__audio_btns.add(UIFlatButton(text='Waiting...'))
+            self.__volume_btn = UIBoxLayout()
+            self.__volume_text = self.__volume_btn.add(UILabel(text='Volume: 50%'))
+            self.__volume_slider = self.__volume_btn.add(UISlider(value=50, width=100))
+            self.__audio_btns.add(self.__volume_btn)
+
+            @self.__ps_res_btn.event('on_click')
+            def on_click(event):
+                if self.__player is not None:
+                    if arcade.Sound.is_playing(self, self.__player):
+                        print('playing, pausing')
+                        self.__player.pause()
+                        self.__ps_res_btn.text = 'Resume'
+                    elif not arcade.Sound.is_playing(self, self.__player):
+                        print('not playing, resuming')
+                        if self.__finish_flag:
+                            print('bah') # redo this check pls
+                            self.__player = self.__cur_sound.play(volume=self.__volume)
+                        else:
+                            self.__player.play()
+                        self.__ps_res_btn.text = 'Pause'
+
+            @self.__volume_slider.event('on_change')
+            def on_change(event):
+                self.__volume = round(self.__volume_slider.value) / 100
+                if self.__player is not None:
+                    self.__player.volume = round(self.__volume)
+                self.__volume_text.text = f'Volume: {int(self.__volume * 100)}%'
 
         # select box
         self.__vertical_list = UIBoxLayout(size_hint=(1, 0), space_between=1)
@@ -104,17 +140,18 @@ class AssetSelector(arcade.View):
         @self.__bg_button.event("on_click")
         def on_click(event):
             if arcade.Sound.is_playing(self, player=self.__curr_audio):
-                arcade.stop_sound(self.__curr_audio) # yes i know that music doesnt stop at the stopped moment but ITS NOT THAT IMPORTANT GODDAMIT
+                self.__curr_audio.pause()
+                self.__pause_bg = True
                 self.__bg_button.text = 'Resume music'
             else:
-                self.__curr_audio = self.__bg_music.play(volume=0.05)
-                self.__bg_button.text = 'Stop music'
+                self.__curr_audio.play()
+                self.__pause_bg = False
+                self.__bg_button.text = 'Pause music'
 
         # sprite list
         self.__sprite_list = arcade.SpriteList()
         self.__hb_flag = False
-        self.__scale_y = round(((
-                                            self.__topright.bottom - self.__exit_button.height - 30) / self.window.height) * self.window.height) + self.__exit_button.height + 19
+        self.__scale_y = round(((self.__topright.bottom - self.__exit_button.height - 30) / self.window.height) * self.window.height) + self.__exit_button.height + 19
         if call == 'Sprites':
             sprite = arcade.Sprite(conf.set_settings('Settings', 'player_sprite'))
             sprite.position = (self.window.width // 3, (self.__scale_y + self.__exit_button.height + 21) // 2)
@@ -134,18 +171,22 @@ class AssetSelector(arcade.View):
         else:
             if self.__player is not None:
                 arcade.stop_sound(self.__player)
-            audio = arcade.load_sound(f'assets/audio/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}')
-            self.__player = audio.play()
+            self.__cur_sound = arcade.load_sound(f'assets/audio/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}')
+            print(f'launching audio at {self.__volume} volume')
+            self.__player = self.__cur_sound.play(volume=self.__volume)
+            self.__ps_res_btn.text = 'Pause'
 
     def on_show_view(self):
         self.__ui.enable()
-        self.__curr_audio = self.__bg_music.play(volume=0.05) # loop the music!
+        self.__curr_audio = self.__bg_music.play(volume=0.05)  # loop the music! ed: just c
 
     def on_hide_view(self):
         self.__ui.disable()
         if self.__player is not None:
             arcade.stop_sound(self.__player)
+            self.__player = None
         arcade.stop_sound(self.__curr_audio)
+        self.__curr_audio = None # just to be safe
 
     def on_draw(self):
         self.clear()
@@ -169,6 +210,16 @@ class AssetSelector(arcade.View):
                     self.__vertical_list.add(button)
                     button.on_click = self.__selector_click
                 self.__previous_option2 = self.__dropdown2.value
+
+        if self.__player is not None:
+            if not self.__cur_sound.is_playing(self.__player):
+                self.__ps_res_btn.text = 'Resume'
+            elif self.__cur_sound.is_complete(self.__player):
+                self.__ps_res_btn.text = 'Resume'
+                self.__finish_flag = True
+
+        if not self.__bg_music.is_playing(self.__curr_audio) and not self.__pause_bg:
+            self.__curr_audio = self.__bg_music.play(volume=0.05)
 
         # @self.__load.event("on_click")
         # # import these before as well

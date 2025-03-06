@@ -127,7 +127,7 @@ class GameLoop(arcade.View):
 
     def on_show_view(self):
         self.window.set_mouse_visible(False)
-        self.curr_audio = self.bg_music.play(volume=0.05)
+        self.curr_audio = self.bg_music.play(volume=0.05, loop=True)
 
     def on_hide_view(self):
         self.window.set_mouse_visible(True)
