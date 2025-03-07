@@ -45,8 +45,9 @@ class AssetSelector(arcade.View):
         self.__bg_music = arcade.load_sound("assets/audio/music/misc/14. The World Machine.mp3", streaming=True)
         self.__pause_bg = False
 
-        # gui ini
+        # gui ini and another misc thing
         self.__ui = UIManager()
+        self.__cur_asset = None
 
         # top buttons
         self.__topright = self.__ui.add(UIBoxLayout(vertical=False))
@@ -68,7 +69,7 @@ class AssetSelector(arcade.View):
 
         # bottom right buttons
         self.__botright = self.__ui.add(UIBoxLayout(x=wid * 2 // 3 + (wid // 3 - child_width) // 2, y=10, vertical=False))
-        self.__save_button = self.__botright.add(UIFlatButton(width=child_width//2, text='Save changes'))
+        self.__save_button = self.__botright.add(UIFlatButton(width=child_width//2, text='Save to selected'))
         self.__exit_button = self.__botright.add(UIFlatButton(width=child_width//2, text='Back to main menu'))
 
         # bottom left buttons
@@ -77,12 +78,10 @@ class AssetSelector(arcade.View):
         self.__remove = self.__botleft.add(UIFlatButton(width=child_width//2, text='Remove selected'))
         self.__bg_button = self.__botleft.add(UIFlatButton(width=child_width//2, text='Stop music'))
         self.__botleft.move(wid*2//3 - child_width*3//2 - 10)
-        # dont forget the player for the music! also do the normal resizing and position
 
         # audio buttons and some ini
         if call == 'Audio':
             self.__player = None
-            self.__cur_sound = None
             self.__pause_flag = False
             self.__volume = 0.5
             self.__audio_btns = self.__ui.add(UIBoxLayout(x=10, y=10, vertical=False))
@@ -125,9 +124,9 @@ class AssetSelector(arcade.View):
         if call == 'Sprites':
             self.__sprite_list = arcade.SpriteList()
             self.__hb_flag = False
-            spr_path = conf.set_settings('Sprites', 'player_sprite')
-            self.__sprite = arcade.Sprite(spr_path)
-            self.__sel_file.text = f"Selected: {spr_path[spr_path.rfind('/')+1:]}"
+            self.__cur_asset = conf.set_settings('Sprites', 'player_sprite')
+            self.__sprite = arcade.Sprite(self.__cur_asset)
+            self.__sel_file.text = f"Selected: {self.__cur_asset[self.__cur_asset.rfind('/')+1:]}"
             self.__sprite.position = (self.window.width // 3, (self.__scale_y + self.__exit_button.height + 21) // 2)
             self.__sprite_list.append(self.__sprite)
             self.__spr_size = self.__sprite.size
@@ -218,6 +217,11 @@ class AssetSelector(arcade.View):
             except Exception as e:
                 print("ERROR! idk what honestly: ", e)
 
+        @self.__save_button.event('on_click')
+        def on_click(event):
+            if self.__cur_asset is not None:
+                conf.update_setting(call, f'{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()}', self.__cur_asset)
+                print(f'UPDATED config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
         # misc
         self.__call = call
         self.__previous_option1 = ''
@@ -227,7 +231,8 @@ class AssetSelector(arcade.View):
 
         if self.__call == 'Sprites':
             self.__sprite_list.clear()
-            self.__sprite = arcade.Sprite(f'assets/sprites/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}')
+            self.__cur_asset = f'assets/sprites/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}'
+            self.__sprite = arcade.Sprite(self.__cur_asset)
             self.__sprite.position = (self.window.width//3, (self.__scale_y+self.__exit_button.height+21)//2)
             self.__sel_file.text = f'Selected: {event.source.text}'
             self.__spr_size = self.__sprite.size
@@ -237,7 +242,8 @@ class AssetSelector(arcade.View):
         else:
             if self.__player is not None:
                 arcade.stop_sound(self.__player)
-            self.__cur_sound = arcade.load_sound(f'assets/audio/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}', streaming=True)
+            self.__cur_asset = f'assets/audio/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}'
+            self.__cur_sound = arcade.load_sound(self.__cur_asset, streaming=True)
             print(f'launching audio at {self.__volume} volume')
             self.__player = self.__cur_sound.play(volume=self.__volume)
             self.__sel_file.text = f'Selected: {event.source.text}'
