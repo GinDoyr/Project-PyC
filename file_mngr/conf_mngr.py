@@ -1,7 +1,7 @@
 import os
 import configparser
 from asset_selector import return_assets_dicts
-
+import file_mngr.logs_mngr as logmn
 config = configparser.ConfigParser()
 
 
@@ -9,8 +9,12 @@ def check_path(path):
     return os.path.exists(path)
 
 
+def remove_file(path):
+    os.remove(path)
+
+
 def create_path(path):
-    return os.makedirs(path)
+    os.makedirs(path)
 
 
 def return_contents(path):
@@ -48,12 +52,14 @@ def create_sprites_and_audio_paths(dct: dict):
                     for i in return_contents(f'assets/{section.lower()}/{setting.lower()}/{value.lower()}'):
                         if i.startswith('[DEFAULT]'):
                             print(f"setting {section}, '{setting.lower()}_{value.lower()}' to 'assets/{section.lower()}/{setting.lower()}/{value.lower()}/{i}'")
+                            logmn.log_info(f"setting {section}, '{setting.lower()}_{value.lower()}' to 'assets/{section.lower()}/{setting.lower()}/{value.lower()}/{i}'")
                             config.set(section, f'{setting.lower()}_{value.lower()}',
                                        f'assets/{section.lower()}/{setting.lower()}/{value.lower()}/{i}')
                             found_flag = True
                             break
                     if not found_flag:
                         print(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
+                        logmn.log_info(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
                         config.set(section, f'{setting.lower()}_{value.lower()}', 'None')
     if change_flag:
         with open("settings/settings.ini", "w") as c_file:
@@ -63,16 +69,21 @@ def create_sprites_and_audio_paths(dct: dict):
 def load_settings():
     if not os.path.isfile("settings/settings.ini"):
         print('settings not in dir!')
+        logmn.log_warning('settings not in dir!')
         create_settings()
         print('default settings set')
+        logmn.log_info('default settings set')
     try:
         config.read("settings/settings.ini")
-    except:
-        print('settings corrupted, setting to default...')  # i dont really know what should you do to get here but whatever, failsafe rulez
+    except Exception as e:
+        print(f'settings corrupted, setting to default... error: {e}')  # i dont really know what should you do to get here but whatever, failsafe rulez
+        logmn.log_error('settings corrupted, setting to default...')
         os.remove('settings/setting.ini')
         create_settings()
         print('default settings set')
-    print('loading settings!')
+        logmn.log_info('default settings set')
+    print('loading settings...')
+    logmn.log_info('loading settings...')
     return config.read("settings/settings.ini")
 
 
@@ -81,6 +92,8 @@ def create_settings():
     # reached, after which a system message pops up with the error, also closing the whole game
     if not os.path.exists("settings"):
         os.makedirs("settings")
+        print('created dir settings')
+        logmn.log_info('created dir settings')
     config.add_section("Settings")
     config.set("Settings", "win_width", "1280")
     config.set("Settings", "win_height", "720")

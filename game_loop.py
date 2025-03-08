@@ -2,7 +2,9 @@ import arcade
 import arcade.clock
 from arcade.math import rotate_point
 import file_mngr.conf_mngr as conf
+import file_mngr.logs_mngr as logmn
 import player
+import enemies
 import math
 
 
@@ -31,6 +33,8 @@ class GameLoop(arcade.View):
     def __init__(self, main_menu):
         super().__init__()
 
+        logmn.log_info('launching game loop')
+
         # misc
         self.clocker = arcade.clock.Clock()
         self.main_menu = main_menu
@@ -38,7 +42,7 @@ class GameLoop(arcade.View):
 
         # sound
         self.curr_audio = None
-        self.bg_music = arcade.load_sound(conf.set_settings('Audio','music_game'), streaming=True)
+        self.bg_music = arcade.load_sound(conf.set_settings('Audio', 'music_game'), streaming=True)
 
         # flags
         self.bg_flag = False
@@ -110,7 +114,7 @@ class GameLoop(arcade.View):
         rotate_around_point(self.pl_bul_hitbox, self.player.position, self.player.angle - prev_angle)
 
     def create_bullets(self):
-        arcade.play_sound(self.player.bullet_audio, volume=0.2)
+        arcade.play_sound(self.player.bullet_audio, volume=float(conf.set_settings('Settings', 'sfx_volume')))
         bullet = arcade.Sprite(self.player.bullet_sprite)
         angle = math.radians(self.player.angle)
         bullet.angle = math.degrees(angle)
@@ -127,11 +131,13 @@ class GameLoop(arcade.View):
 
     def on_show_view(self):
         self.window.set_mouse_visible(False)
-        self.curr_audio = self.bg_music.play(volume=0.05, loop=True)
+        self.curr_audio = self.bg_music.play(volume=float(conf.set_settings('Settings', 'bg_volume')), loop=True)
 
     def on_hide_view(self):
         self.window.set_mouse_visible(True)
         arcade.stop_sound(self.curr_audio)
+        print('closing game loop')
+        logmn.log_info('closing game loop')
 
     def on_draw(self):
         self.clear()

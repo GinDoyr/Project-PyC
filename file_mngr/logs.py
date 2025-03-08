@@ -1,1 +1,0 @@
-# currently empty, but probably gonna make a log system with some main events (like changing views, loading/saving settings, sprites, etc. being logged)

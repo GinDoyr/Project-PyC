@@ -7,6 +7,7 @@ from arcade.gui import (
     UIBoxLayout,
     UISlider,
     UILabel)
+import file_mngr.logs_mngr as logmn
 import file_mngr.conf_mngr as conf
 import game_loop
 import asset_selector
@@ -27,6 +28,7 @@ window.center_window()
 class Main_menu(arcade.View):
     def __init__(self):
         super().__init__()
+        logmn.log_info('launching!')
 
         # misc
         self.background_color = arcade.color.BLACK
@@ -123,6 +125,7 @@ class Main_menu(arcade.View):
         @self.exit_main.event("on_click")
         def on_click(event):
             print("closing game")
+            logmn.log_info("see you next time :)")
             window.close()
 
         # settings buttons
@@ -155,7 +158,7 @@ class Main_menu(arcade.View):
         def on_change(event):
             self.bg_volume = round(self.mus_slider.value)/100
             if self.curr_audio is not None:
-                self.curr_audio.volume = round(self.bg_volume)
+                self.curr_audio.volume = self.bg_volume
             self.mus_text.text = f'Music: {int(self.bg_volume * 100)}%'
 
         @self.sfx_slider.event('on_change')
@@ -168,6 +171,7 @@ class Main_menu(arcade.View):
             conf.update_setting("Settings", "bg_volume", str(self.bg_volume))
             conf.update_setting("Settings", "sfx_volume", str(self.sfx_volume))
             print(f'volume saved to {self.bg_volume}, sfx saved to {self.sfx_volume}')
+            logmn.log_info(f'volume saved to {self.bg_volume}, sfx saved to {self.sfx_volume}')
 
         @self.back_vol.event("on_click")
         def on_click(event):
