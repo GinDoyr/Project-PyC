@@ -272,7 +272,8 @@ class Main_menu(arcade.View):
                 conf.update_setting('Settings', 'resourcepack', 'None')
                 conf.create_sprites_and_audio_paths(conf.return_assets_dicts())
                 self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
-                arcade.stop_sound(self.curr_audio)
+                if self.curr_audio is not None:
+                    arcade.stop_sound(self.curr_audio)
                 self.rspk_text.text = f'Selected resourcepack: \n'
                 print('reset resourcepack to default (aka None)')
                 conf.logmn.log_info('reset resourcepack to default (aka None)')

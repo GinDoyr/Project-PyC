@@ -2,6 +2,7 @@ import arcade
 import arcade.clock
 from arcade.math import rotate_point
 import file_mngr.conf_mngr as conf
+import file_mngr.zip_mngr as zipmn
 import player
 import enemies
 import math
@@ -41,7 +42,14 @@ class GameLoop(arcade.View):
 
         # sound
         self.curr_audio = None
-        self.bg_music = arcade.load_sound(conf.set_settings('Audio', 'music_game'), streaming=True)
+        if conf.set_settings('Settings', 'resourcepack') != 'None':  # and so this is probably going to happen everywhere... i still don't know whether i should make this a func or not
+            zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
+            try:
+                self.bg_music = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'music_game', streaming=True)
+            except:
+                self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_game"), streaming=True)
+        else:
+            self.bg_music = arcade.load_sound(conf.set_settings('Audio', 'music_game'), streaming=True)
 
         # flags
         self.bg_flag = False
@@ -56,26 +64,43 @@ class GameLoop(arcade.View):
 
         # player stuff
         # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
-        self.player_sprite = conf.set_settings("Sprites", "player_sprite")
-        self.pl_bullet_sprite = conf.set_settings("Sprites", "player_bullet")
-        self.pl_bullet_audio = conf.set_settings("Audio", "player_bullet")
-        self.pl_crsh_sprite = conf.set_settings("Sprites", "player_crosshair")
-        self.pl_crsh = arcade.Sprite(self.pl_crsh_sprite)
-        self.pl_bullet_audio_compl = arcade.load_sound(self.pl_bullet_audio)
+        if conf.set_settings('Settings', 'resourcepack') != 'None':  # i should definitely make this a function somehow, very bad i keep repeating it over and over
+            zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
+            try:
+                self.player_sprite = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_sprite', scale=0.2)
+            except:
+                self.player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'), scale=0.2)
+            try:
+                self.pl_bullet_sprite = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_bullet')
+            except:
+                self.pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet'))
+            try:
+                self.pl_crsh = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_crosshair')
+            except:
+                self.pl_crsh = arcade.Sprite(conf.set_settings("Sprites", "player_crosshair"))
+            try:
+                self.pl_bullet_audio = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'player_bullet')
+            except:
+                self.pl_bullet_audio = arcade.load_sound(conf.set_settings("Audio", "player_bullet"))
+        else:
+            self.player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'), scale=0.2)
+            self.pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet'))
+            self.pl_crsh = arcade.Sprite(conf.set_settings("Sprites", "player_crosshair"))
+            self.pl_bullet_audio = arcade.load_sound(conf.set_settings("Audio", "player_bullet"))
         self.pl_bullet_speed = 10
-        self.pl_bullet_recharge = 3 # higher - faster
-        self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio_compl, 0.2, 0.2)
+        self.pl_bullet_recharge = 6  # higher - faster
+        self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio)
         self.pl_speed = 10
-        self.player.center_x = self.window.center_x
-        self.player.center_y = self.window.center_y
+        self.player.sprite.center_x = self.window.center_x
+        self.player.sprite.center_y = self.window.center_y
         self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")
-        self.pl_bul_hitbox.bottom = self.player.top
-        self.pl_bul_hitbox.center_x = self.player.center_x
+        self.pl_bul_hitbox.bottom = self.player.sprite.top
+        self.pl_bul_hitbox.center_x = self.player.sprite.center_x
 
         # sprite lists
         self.sprite_list = arcade.SpriteList()
         self.entities_list = arcade.SpriteList()
-        self.sprite_list.append(self.player)
+        self.sprite_list.append(self.player.sprite)
         self.sprite_list.append(self.pl_crsh)
         self.sprite_list.append(self.pl_bul_hitbox)
         self.pl_bul_hitbox.visible = False
@@ -86,36 +111,36 @@ class GameLoop(arcade.View):
 
     def update_player_speed(self):
 
-        self.player.change_x = 0
-        self.player.change_y = 0
+        self.player.sprite.change_x = 0
+        self.player.sprite.change_y = 0
         self.pl_bul_hitbox.change_y = 0
         self.pl_bul_hitbox.change_x = 0
 
         if self.up_pressed and not self.down_pressed:
-            self.player.change_y = self.pl_speed
-            self.pl_bul_hitbox.change_y = self.player.change_y
+            self.player.sprite.change_y = self.pl_speed
+            self.pl_bul_hitbox.change_y = self.player.sprite.change_y
         elif self.down_pressed and not self.up_pressed:
-            self.player.change_y = -self.pl_speed
-            self.pl_bul_hitbox.change_y = self.player.change_y
+            self.player.sprite.change_y = -self.pl_speed
+            self.pl_bul_hitbox.change_y = self.player.sprite.change_y
         if self.left_pressed and not self.right_pressed:
-            self.player.change_x = -self.pl_speed
-            self.pl_bul_hitbox.change_x = self.player.change_x
+            self.player.sprite.change_x = -self.pl_speed
+            self.pl_bul_hitbox.change_x = self.player.sprite.change_x
         elif self.right_pressed and not self.left_pressed:
-            self.player.change_x = self.pl_speed
-            self.pl_bul_hitbox.change_x = self.player.change_x
+            self.player.sprite.change_x = self.pl_speed
+            self.pl_bul_hitbox.change_x = self.player.sprite.change_x
 
     def update_player_angle(self, x, y):
-        x_angle = x - self.player.center_x
-        y_angle = y - self.player.center_y
+        x_angle = x - self.player.sprite.center_x
+        y_angle = y - self.player.sprite.center_y
         angle = math.atan2(-y_angle, x_angle)
-        prev_angle = self.player.angle
-        self.player.angle = math.degrees(angle) + 90
-        rotate_around_point(self.pl_bul_hitbox, self.player.position, self.player.angle - prev_angle)
+        prev_angle = self.player.sprite.angle
+        self.player.sprite.angle = math.degrees(angle) + 90
+        rotate_around_point(self.pl_bul_hitbox, self.player.sprite.position, self.player.sprite.angle - prev_angle)
 
     def create_bullets(self):
         arcade.play_sound(self.player.bullet_audio, volume=float(conf.set_settings('Settings', 'sfx_volume')))
-        bullet = arcade.Sprite(self.player.bullet_sprite)
-        angle = math.radians(self.player.angle)
+        bullet = arcade.Sprite(self.player.bullet_sprite.texture)
+        angle = math.radians(self.player.sprite.angle)
         bullet.angle = math.degrees(angle)
         bullet.change_y = self.pl_bullet_speed * math.cos(angle)
         bullet.change_x = self.pl_bullet_speed * math.sin(angle)
@@ -141,7 +166,6 @@ class GameLoop(arcade.View):
     def on_draw(self):
         self.clear()
         self.sprite_list.draw()
-        self.sprite_list.draw_hit_boxes()
         self.entities_list.draw()
 
     def on_update(self, delta_time):

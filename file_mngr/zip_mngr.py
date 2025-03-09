@@ -27,7 +27,7 @@ def load_resourcepack(path):
     conf.logmn.log_info(f'fully loaded and set the assets from resourcepack {path}')
 
 
-def load_from_resourcepack(rspk_path, section, setting, streaming=False):
+def load_from_resourcepack(rspk_path, section, setting, streaming=False, scale=1.0):
     '''
     load texture/audio from a resourcepack by temporarily extracting the file and assigning it to supported type
     group extraction is planned but highly unlikely
@@ -36,6 +36,7 @@ def load_from_resourcepack(rspk_path, section, setting, streaming=False):
     :param section: section in settings.ini
     :param setting: setting in settings.ini
     :param streaming: for arcade's audio streaming, default False
+    :param scale: for arcade's sprites, default 1.0, change either with a tuple (x,y) or a float
     :return: arcade.Sprite or arcade.Sound depending on what was chosen
     '''
     conf.logmn.log_info(f'starting to load asset on {section}-{setting} from resourcepack {rspk_path}')
@@ -47,7 +48,7 @@ def load_from_resourcepack(rspk_path, section, setting, streaming=False):
         archive.extract(asset_path[asset_path.find('/')+1:], 'temp')
         result = None
         if section == 'Sprites':
-            result = arcade.Sprite(asset_path)
+            result = arcade.Sprite(asset_path, scale)
         elif section == 'Audio':
             result = arcade.load_sound(asset_path, streaming)
         else:
