@@ -2,7 +2,6 @@ import arcade
 import arcade.clock
 from arcade.math import rotate_point
 import file_mngr.conf_mngr as conf
-import file_mngr.logs_mngr as logmn
 import player
 import enemies
 import math
@@ -33,7 +32,7 @@ class GameLoop(arcade.View):
     def __init__(self, main_menu):
         super().__init__()
 
-        logmn.log_info('launching game loop')
+        conf.logmn.log_info('launching game loop')
 
         # misc
         self.clocker = arcade.clock.Clock()
@@ -137,7 +136,7 @@ class GameLoop(arcade.View):
         self.window.set_mouse_visible(True)
         arcade.stop_sound(self.curr_audio)
         print('closing game loop')
-        logmn.log_info('closing game loop')
+        conf.logmn.log_info('closing game loop')
 
     def on_draw(self):
         self.clear()

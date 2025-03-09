@@ -4,30 +4,16 @@ from arcade.gui import (UIManager, UIBoxLayout, UIDropdown, UIFlatButton, UISlid
                         UITextureButton)
 from arcade.gui.experimental import UIScrollArea
 from tkinter.filedialog import askopenfilename
-import shutil
-import file_mngr.logs_mngr as logmn
 import file_mngr.conf_mngr as conf
-
-dicts = {'Sprites': {'Player': ['Sprite', 'Bullet', 'Crosshair'],
-                     'Enemies': ['Enemy1', 'Enemy1 explosion', 'Enemy2', 'Enemy2 fire', 'Enemy3',
-                                 'Enemy3 fire', 'Boss', 'Boss charge', 'Boss laser'],
-                     'Other': ['Background', 'Walls', 'Lives']},
-         'Audio': {'Player': ['Bullet', 'Dash', 'Death'],
-                   'Enemies': ['Enemy1 rush', 'Enemy1 explosion', 'Enemy1 death', 'Enemy2 death',
-                               'Enemy3 death', 'Boss charge', 'Boss fire', 'Boss death'],
-                   'Other': ['Live lost', 'Live regained'],
-                   'Music': ['Main menu', 'Game', 'Boss']}}
-
-
-def return_assets_dicts():
-    return dicts
 
 
 class AssetSelector(arcade.View):
     def __init__(self, call, main_menu):
         super().__init__()
 
-        logmn.log_info('launching asset selector')
+        # log start and load the assets dict
+        conf.logmn.log_info('launching asset selector')
+        dicts = conf.return_assets_dicts()
 
         # call check
         if call == 'Sprites':
@@ -36,7 +22,7 @@ class AssetSelector(arcade.View):
             dropdown_options = dicts.get('Audio')
         else:
             print(f'INCORRECT CALL! {call}')
-            logmn.log_warning(f'INCORRECT CALL! {call}')
+            conf.logmn.log_warning(f'INCORRECT CALL! {call}')
             self.window.close()  # idk i'd rather just crash the game lol¯\_(ツ)_/¯
             exit()
         for i in dropdown_options:
@@ -44,7 +30,7 @@ class AssetSelector(arcade.View):
                 if not conf.check_path(f'assets/{call.lower()}/{i.lower()}/{v.lower()}'):
                     conf.create_path(f'assets/{call.lower()}/{i.lower()}/{v.lower()}')
                     print(f'created assets/{call.lower()}/{i.lower()}/{v.lower()}')
-                    logmn.log_info(f'created assets/{call.lower()}/{i.lower()}/{v.lower()}')
+                    conf.logmn.log_info(f'created assets/{call.lower()}/{i.lower()}/{v.lower()}')
 
 
         # sound
@@ -70,7 +56,7 @@ class AssetSelector(arcade.View):
                              self.window.height * 15 // 16)  # this one's required to be like that cause how else would i know children width
         if self.__topright.left + child_width > wid:
             print('DROPDOWN BUTTONS OUT THE WINDOW!! if this happened that means i was too lazy to make the rescalable window')
-            logmn.log_warning('DROPDOWN BUTTONS OUT THE WINDOW!! if this happened that means i was too lazy to make the rescalable window')
+            conf.logmn.log_warning('DROPDOWN BUTTONS OUT THE WINDOW!! if this happened that means i was too lazy to make the rescalable window')
 
         # top left buttons
         self.__topleft = self.__ui.add(
@@ -111,18 +97,18 @@ class AssetSelector(arcade.View):
                 if self.__player is not None:
                     if arcade.Sound.is_playing(self, self.__player):
                         print('pausing selected audio')
-                        logmn.log_info('pausing selected audio')
+                        conf.logmn.log_info('pausing selected audio')
                         self.__pause_flag = True
                         self.__player.pause()
                         self.__ps_res_btn.text = 'Resume'
                     elif not arcade.Sound.is_playing(self, self.__player):
                         if not self.__pause_flag:
                             print('restarting selected audio as it finished!')
-                            logmn.log_info('restarting selected audio as it finished!')
+                            conf.logmn.log_info('restarting selected audio as it finished!')
                             self.__player = self.__cur_sound.play(volume=self.__volume)
                         else:
                             print('resuming selected audio')
-                            logmn.log_info('resuming selected audio')
+                            conf.logmn.log_info('resuming selected audio')
                             self.__player.play()
                             self.__pause_flag = False
                         self.__ps_res_btn.text = 'Pause'
@@ -153,7 +139,7 @@ class AssetSelector(arcade.View):
                 self.__sprite.size = (self.__spr_size[0] * (round(self.__zoom_slider.value / 100, 2) + 0.5),
                                       self.__spr_size[1] * (round(self.__zoom_slider.value / 100, 2) + 0.5))
 
-        # select box
+        # select box for scroll area
         self.__vertical_list = UIBoxLayout(size_hint=(1, 0), space_between=1)
         for i in conf.return_contents(f'assets/{call.lower()}/{self.__dropdown1.value}/{self.__dropdown2.value}'):
             button = UIFlatButton(height=30, size_hint=(1, None), text=f"{i}")
@@ -174,7 +160,7 @@ class AssetSelector(arcade.View):
         def on_click(event):
             self.window.show_view(main_menu)
             print('closing asset selector')
-            logmn.log_info('closing asset selector')
+            conf.logmn.log_info('closing asset selector')
 
         @self.__dropdown1.event("on_change")
         def on_change(event):
@@ -212,10 +198,10 @@ class AssetSelector(arcade.View):
                 if not conf.check_path(
                         f'assets/{call.lower()}/{self.__dropdown1.value}/{self.__dropdown2.value}/{filename[filename.rfind("/") + 1:]}'):
                     if call == 'Audio' and filename.endswith(('.mp3', '.wav')):
-                        shutil.copy(filename,
+                        conf.copy_file(filename,
                                     f'assets/{call.lower()}/{self.__dropdown1.value}/{self.__dropdown2.value}')
                         print(f'loaded {filename}')
-                        logmn.log_info(f'loaded {filename}')
+                        conf.logmn.log_info(f'loaded {filename}')
                         self.__vertical_list.clear()
                         for i in conf.return_contents(
                                 f'assets/{self.__call.lower()}/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}'):
@@ -224,10 +210,10 @@ class AssetSelector(arcade.View):
                             button.on_click = self.__selector_click
 
                     elif call == 'Sprites' and filename.endswith(('.jpg', '.png', '.gif', '.jpeg')):
-                        shutil.copy(filename,
+                        conf.copy_file(filename,
                                     f'assets/{call.lower()}/{self.__dropdown1.value}/{self.__dropdown2.value}')
                         print(f'loaded {filename}')
-                        logmn.log_info(f'loaded {filename}')
+                        conf.logmn.log_info(f'loaded {filename}')
                         self.__vertical_list.clear()
                         for i in conf.return_contents(
                                 f'assets/{self.__call.lower()}/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}'):
@@ -236,13 +222,13 @@ class AssetSelector(arcade.View):
                             button.on_click = self.__selector_click
                     else:
                         print(f'incorrect file type! call: {call}; file: {filename}')
-                        logmn.log_warning(f'incorrect file type! call: {call}; file: {filename}')
+                        conf.logmn.log_warning(f'incorrect file type! call: {call}; file: {filename}')
                 else:
                     print(f"already loaded {filename} or closed the window")
-                    logmn.log_info(f"already loaded {filename} or closed the window")
+                    conf.logmn.log_info(f"already loaded {filename} or closed the window")
             except Exception as e:
                 print(f"ERROR! idk what honestly: {e}")
-                logmn.log_error(f"ERROR! idk what honestly: {e}")
+                conf.logmn.log_error(f"ERROR! idk what honestly: {e}")
 
         @self.__remove.event("on_click")
         def on_click(event):
@@ -264,7 +250,7 @@ class AssetSelector(arcade.View):
                 if event.action == 'Remove':
                     conf.remove_file(self.__cur_asset)
                     print(f'file removed: {self.__cur_asset}')
-                    logmn.log_info(f'file removed: {self.__cur_asset}')
+                    conf.logmn.log_info(f'file removed: {self.__cur_asset}')
                     self.__vertical_list.clear()
                     for i in conf.return_contents(
                             f'assets/{self.__call.lower()}/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}'):
@@ -288,11 +274,11 @@ class AssetSelector(arcade.View):
         def on_click(event):
             if self.__cur_asset is not None:
                 print(f'trying to UPDATE config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
-                logmn.log_info(f'trying to UPDATE config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
+                conf.logmn.log_info(f'trying to UPDATE config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
                 conf.update_setting(call, f'{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()}',
                                     self.__cur_asset)
                 print(f'UPDATED config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
-                logmn.log_info(f'UPDATED config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
+                conf.logmn.log_info(f'UPDATED config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
 
         # misc
         self.__call = call
@@ -304,7 +290,7 @@ class AssetSelector(arcade.View):
         if self.__call == 'Sprites':
             self.__sprite_list.clear()
             print(f'trying to load assets/sprites/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}')
-            logmn.log_info(f'trying to load assets/sprites/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}')
+            conf.logmn.log_info(f'trying to load assets/sprites/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}')
             self.__cur_asset = f'assets/sprites/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}'
             self.__sprite = arcade.Sprite(self.__cur_asset)
             self.__sprite.position = (self.window.width // 3, (self.__scale_y + self.__exit_button.height + 21) // 2)
@@ -319,7 +305,7 @@ class AssetSelector(arcade.View):
             self.__cur_asset = f'assets/audio/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}'
             self.__cur_sound = arcade.load_sound(self.__cur_asset, streaming=True)
             print(f'launching audio at {self.__volume} volume')
-            logmn.log_info(f'launching audio at {self.__volume} volume')
+            conf.logmn.log_info(f'launching audio at {self.__volume} volume')
             self.__player = self.__cur_sound.play(volume=self.__volume)
             self.__sel_file.text = f'Selected: {event.source.text}'
             sound_len = self.__cur_sound.get_length()
@@ -339,7 +325,7 @@ class AssetSelector(arcade.View):
 
     def on_show_view(self):
         self.__ui.enable()
-        self.__curr_audio = self.__bg_music.play(volume=0.05)  # loop the music! ed: just c
+        self.__curr_audio = self.__bg_music.play(volume=0.05)
 
     def on_hide_view(self):
         self.__ui.disable()

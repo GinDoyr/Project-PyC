@@ -7,8 +7,8 @@ from arcade.gui import (
     UIBoxLayout,
     UISlider,
     UILabel)
-import file_mngr.logs_mngr as logmn
 import file_mngr.conf_mngr as conf
+import file_mngr.zip_mngr as zipmn
 import game_loop
 import asset_selector
 
@@ -28,7 +28,7 @@ window.center_window()
 class Main_menu(arcade.View):
     def __init__(self):
         super().__init__()
-        logmn.log_info('launching!')
+        conf.logmn.log_info('launching!')
 
         # misc
         self.background_color = arcade.color.BLACK
@@ -99,6 +99,7 @@ class Main_menu(arcade.View):
         self.assets_buttons = self.ui.add(UIBoxLayout())
         self.audio_assets = self.assets_buttons.add(UIFlatButton(text="Audio"))
         self.sprites_assets = self.assets_buttons.add(UIFlatButton(text="Sprites"))
+        self.resourcepacks_assets = self.assets_buttons.add(UIFlatButton(text='Resourcepacks'))
         self.back_assets = self.assets_buttons.add(UIFlatButton(text="Back"))
 
         # button flags
@@ -125,7 +126,7 @@ class Main_menu(arcade.View):
         @self.exit_main.event("on_click")
         def on_click(event):
             print("closing game")
-            logmn.log_info("see you next time :)")
+            conf.logmn.log_info("see you next time :)")
             window.close()
 
         # settings buttons
@@ -171,7 +172,7 @@ class Main_menu(arcade.View):
             conf.update_setting("Settings", "bg_volume", str(self.bg_volume))
             conf.update_setting("Settings", "sfx_volume", str(self.sfx_volume))
             print(f'volume saved to {self.bg_volume}, sfx saved to {self.sfx_volume}')
-            logmn.log_info(f'volume saved to {self.bg_volume}, sfx saved to {self.sfx_volume}')
+            conf.logmn.log_info(f'volume saved to {self.bg_volume}, sfx saved to {self.sfx_volume}')
 
         @self.back_vol.event("on_click")
         def on_click(event):
@@ -188,6 +189,11 @@ class Main_menu(arcade.View):
         def on_click(event):
             assets = asset_selector.AssetSelector(self.sprites_assets.text, self)
             window.show_view(assets)
+
+        @self.resourcepacks_assets.event('on_click')
+        def on_click(event):
+            print('resourcepack selection WIP')
+            # dude, just add a scroll are how you did for assets and a selected resourcepack if there is such. D O N E .
 
         @self.back_assets.event("on_click")
         def on_click(event):
