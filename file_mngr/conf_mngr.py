@@ -55,10 +55,6 @@ def update_setting(section, setting, value):
         config.write(config_file)
 
 
-def set_temporary_asset_from_resourcepack(section, settings, value):
-    config.set(section, settings, value)
-
-
 import file_mngr.logs_mngr as logmn  # putting it here to avoid some probable circular imports (which were happening sometimes)
 # edit: i've decided to just use the logmn from here instead of importing it everywhere lol ¯\_(ツ)_/¯
 
@@ -70,15 +66,39 @@ def create_sprites_and_audio_paths(dct: dict):
     :return: None
     '''
     change_flag = False
+    found_flag = False
     for section in dct.keys():  # Sprites or Audio
         for setting in dct.get(section):  # Keys for their relative dicts
             for value in dct.get(section).get(setting):
                 try:
                     config.read('settings/settings.ini')
                     config.get(section, f'{setting.lower()}_{value.lower()}')
+                    if config.get(section, f'{setting.lower()}_{value.lower()}').startswith('temp'):
+                        if not change_flag:
+                            change_flag = True
+                        try:
+                            for i in return_contents(f'assets/{section.lower()}/{setting.lower()}/{value.lower()}'):
+                                if i.startswith('[DEFAULT]'):
+                                    print(
+                                        f"setting {section}, '{setting.lower()}_{value.lower()}' to 'assets/{section.lower()}/{setting.lower()}/{value.lower()}/{i}'")
+                                    logmn.log_info(
+                                        f"setting {section}, '{setting.lower()}_{value.lower()}' to 'assets/{section.lower()}/{setting.lower()}/{value.lower()}/{i}'")
+                                    config.set(section, f'{setting.lower()}_{value.lower()}', f'assets/{section.lower()}/{setting.lower()}/{value.lower()}/{i}')
+                                    found_flag = True
+                                    break
+                            if not found_flag:
+                                print(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
+                                logmn.log_info(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
+                                config.set(section, f'{setting.lower()}_{value.lower()}', 'None')
+                        except FileNotFoundError:
+                            print(f'ASSETS PATH NOT FOUND!: assets/{section.lower()}/{setting.lower()}/{value.lower()}')
+                            logmn.log_warning(
+                                f'ASSETS PATH NOT FOUND!: assets/{section.lower()}/{setting.lower()}/{value.lower()}')
+                            print(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
+                            logmn.log_info(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
+                            config.set(section, f'{setting.lower()}_{value.lower()}', 'None')
                 except:
                     config.read('settings/settings.ini')
-                    found_flag = False
                     if not change_flag:
                         change_flag = True
                     try:
@@ -92,19 +112,20 @@ def create_sprites_and_audio_paths(dct: dict):
                                            f'assets/{section.lower()}/{setting.lower()}/{value.lower()}/{i}')
                                 found_flag = True
                                 break
-                            if not found_flag:
-                                print(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
-                                logmn.log_info(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
-                                config.set(section, f'{setting.lower()}_{value.lower()}', 'None')
+                        if not found_flag:
+                            print(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
+                            logmn.log_info(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
+                            config.set(section, f'{setting.lower()}_{value.lower()}', 'None')
                     except FileNotFoundError:
                         print(f'ASSETS PATH NOT FOUND!: assets/{section.lower()}/{setting.lower()}/{value.lower()}')
                         logmn.log_warning(f'ASSETS PATH NOT FOUND!: assets/{section.lower()}/{setting.lower()}/{value.lower()}')
                         print(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
                         logmn.log_info(f"setting {section}, '{setting.lower()}_{value.lower()}' to None")
                         config.set(section, f'{setting.lower()}_{value.lower()}', 'None')
-    if change_flag:
-        with open("settings/settings.ini", "w") as c_file:
-            config.write(c_file)
+                finally:
+                    if change_flag:
+                        with open("settings/settings.ini", "w") as c_file:
+                            config.write(c_file)
 
 
 def load_settings():
@@ -141,6 +162,7 @@ def create_settings():
     config.set("Settings", "win_height", "720")
     config.set("Settings", "bg_volume", "0.5")
     config.set("Settings", "sfx_volume", "0.5")
+    config.set("Settings", "resourcepack", "None")
     config.add_section("Controls")
     config.set("Controls", "up", "W")
     config.set("Controls", "left", "A")

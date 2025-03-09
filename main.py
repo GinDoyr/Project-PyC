@@ -7,6 +7,7 @@ from arcade.gui import (
     UIBoxLayout,
     UISlider,
     UILabel)
+from arcade.gui.experimental import UIScrollArea
 import file_mngr.conf_mngr as conf
 import file_mngr.zip_mngr as zipmn
 import game_loop
@@ -34,11 +35,23 @@ class Main_menu(arcade.View):
         self.background_color = arcade.color.BLACK
         self.resize_count = 0
         self.clocker = arcade.clock.Clock()
+        self.rspk_curr = None
 
         # sound
         self.curr_audio = None
-        self.bg_music_pre = conf.set_settings("Audio", "music_main menu")
-        self.bg_music = arcade.load_sound(self.bg_music_pre)
+        if conf.set_settings('Settings', 'resourcepack') != 'None':
+            zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
+            self.rspk_curr = conf.set_settings('Settings', 'resourcepack')
+            self.rspk_curr = self.rspk_curr[self.rspk_curr.find('/')+1:]
+            try:
+                self.bg_music = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio',
+                                                             'music_main menu')
+            except Exception as e:
+                print(f'no main menu music in archive! {e}')
+                conf.logmn.log_warning(f'no main menu music in archive! {e}')
+                self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
+        else:
+            self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
         self.bg_volume = float(conf.set_settings("Settings", "bg_volume"))
         self.sfx_volume = float(conf.set_settings("Settings", "sfx_volume"))
 
@@ -102,10 +115,39 @@ class Main_menu(arcade.View):
         self.resourcepacks_assets = self.assets_buttons.add(UIFlatButton(text='Resourcepacks'))
         self.back_assets = self.assets_buttons.add(UIFlatButton(text="Back"))
 
+        # resourcepack selection
+        rspk_buttons = self.ui.add(UIBoxLayout(x=self.window.width//4, size_hint=(1, 1)))
+        # scroll area
+        rspk_list = UIBoxLayout(size_hint=(1, 0), space_between=1)
+        for i in conf.return_contents('resourcepacks'):
+            button = UIFlatButton(height=30, size_hint=(1, None), text=f"{i}")
+            rspk_list.add(button)
+            button.on_click = self.select_click
+
+        rspk_buttons_top = UIBoxLayout(size_hint=(1,1), space_between=10, vertical=False)
+        v_scroll = rspk_buttons_top.add(UIBoxLayout(vertical=False, size_hint=(1/4, 1/2)))
+        scroll_layout = v_scroll.add(UIScrollArea(size_hint=(1, 1)))
+        scroll_layout.with_border(color=arcade.uicolor.WHITE)
+        scroll_layout.add(rspk_list)
+        scroll_layout.invert_scroll = True
+        if conf.set_settings('Settings', 'resourcepack') != 'None':
+            self.rspk_text = rspk_buttons_top.add(UILabel(width=200, text=f'Selected resourcepack: \n{self.rspk_curr}', multiline=True))
+        else:
+            self.rspk_text = rspk_buttons_top.add(UILabel(width=200, text=f'Selected resourcepack: \n', multiline=True))
+
+        rspk_buttons_bottom = UIBoxLayout(vertical=False)
+        rspk_confirm = rspk_buttons_bottom.add(UIFlatButton(text='Save selected'))
+        rspk_remove = rspk_buttons_bottom.add(UIFlatButton(text='Set to default', multiline=True))
+        rspk_back = rspk_buttons_bottom.add(UIFlatButton(text='Back'))
+
+        rspk_buttons.add(rspk_buttons_top)
+        rspk_buttons.add(rspk_buttons_bottom)
+
         # button flags
         self.settings_buttons.visible = False
         self.audio_buttons.visible = False
         self.assets_buttons.visible = False
+        rspk_buttons.visible = False
 
         # gui defs
         # main menu buttons
@@ -192,13 +234,59 @@ class Main_menu(arcade.View):
 
         @self.resourcepacks_assets.event('on_click')
         def on_click(event):
-            print('resourcepack selection WIP')
-            # dude, just add a scroll are how you did for assets and a selected resourcepack if there is such. D O N E .
+            rspk_buttons.visible = True
+            rspk_list.clear()
+            for i in conf.return_contents('resourcepacks'):
+                button = UIFlatButton(height=30, size_hint=(1, None), text=f"{i}")
+                rspk_list.add(button)
+                button.on_click = self.select_click
+            self.assets_buttons.visible = False
 
         @self.back_assets.event("on_click")
         def on_click(event):
             self.assets_buttons.visible = False
             self.settings_buttons.visible = True
+
+        # resourcepack buttons
+        @rspk_confirm.event('on_click')
+        def on_click(event):
+            if self.rspk_curr is not None:
+                print('trying to set resourcepack in settings...')
+                conf.logmn.log_info('trying to set resourcepack in settings...')
+                try:
+                    conf.update_setting("Settings", "resourcepack", f'resourcepacks/{self.rspk_curr}')
+                    zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
+                    try:
+                        self.bg_music = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'music_main menu')
+                        arcade.stop_sound(self.curr_audio)
+                    except Exception as e:
+                        print(f'no main menu music in archive! {e}')
+                        conf.logmn.log_warning(f'no main menu music in archive! {e}')
+                except Exception as e:
+                    print(f'failed! {e}')
+                    conf.logmn.log_error(f'failed! {e}')
+
+        @rspk_remove.event('on_click')
+        def on_click(event):
+            if conf.set_settings('Settings', 'resourcepack') != 'None':
+                conf.update_setting('Settings', 'resourcepack', 'None')
+                conf.create_sprites_and_audio_paths(conf.return_assets_dicts())
+                self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
+                arcade.stop_sound(self.curr_audio)
+                self.rspk_text.text = f'Selected resourcepack: \n'
+                print('reset resourcepack to default (aka None)')
+                conf.logmn.log_info('reset resourcepack to default (aka None)')
+
+
+        @rspk_back.event('on_click')
+        def on_click(event):
+            rspk_buttons.visible = False
+            self.assets_buttons.visible = True
+
+    def select_click(self, event):
+        self.rspk_curr = event.source.text
+        self.rspk_text.text = f'Selected resourcepack: \n{self.rspk_curr}'
+
 
     def on_show_view(self) -> None:
         self.ui.enable()

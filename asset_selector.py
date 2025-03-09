@@ -124,20 +124,19 @@ class AssetSelector(arcade.View):
         else:
             self.__sprite_list = arcade.SpriteList()
             self.__hb_flag = False
-            self.__cur_asset = conf.set_settings('Sprites', 'player_sprite')
-            self.__sprite = arcade.Sprite(self.__cur_asset)
-            self.__sel_file.text = f"Selected: {self.__cur_asset[self.__cur_asset.rfind('/') + 1:]}"
-            self.__sprite.position = (self.window.width // 3, (self.__scale_y + self.__exit_button.height + 21) // 2)
-            self.__sprite_list.append(self.__sprite)
-            self.__spr_size = self.__sprite.size
-            self.__spr_resolution = self.__topleft.add(UILabel(text=f'Resolution: {self.__spr_size}'))
-            self.__zoom_txt = self.__topleft.add(UILabel(text='Zoom: '))
+            self.__cur_asset = None
+            self.__sprite = None
+            self.__sel_file.text = "Selected: "
+            self.__spr_size = None
+            self.__spr_resolution = self.__topleft.add(UILabel(text='Resolution:'))
+            self.__zoom_txt = self.__topleft.add(UILabel(text='Zoom:'))
             self.__zoom_slider = self.__topleft.add(UISlider(value=50, width=100))
 
             @self.__zoom_slider.event("on_change")
             def on_change(event):
-                self.__sprite.size = (self.__spr_size[0] * (round(self.__zoom_slider.value / 100, 2) + 0.5),
-                                      self.__spr_size[1] * (round(self.__zoom_slider.value / 100, 2) + 0.5))
+                if self.__sprite is not None:
+                    self.__sprite.size = (self.__spr_size[0] * (round(self.__zoom_slider.value / 100, 2) + 0.5),
+                                          self.__spr_size[1] * (round(self.__zoom_slider.value / 100, 2) + 0.5))
 
         # select box for scroll area
         self.__vertical_list = UIBoxLayout(size_hint=(1, 0), space_between=1)

@@ -22,7 +22,7 @@ def load_resourcepack(path):
     for i in data:
         if not i.endswith('/') and i.startswith(tuple(existing_paths)):
             temp_path = i[i.find('/')+1:].split('/')
-            conf.set_temporary_asset_from_resourcepack(temp_path[0].title(), f'{temp_path[1]}_{temp_path[2]}', 'temp/'+i)
+            conf.update_setting(temp_path[0].title(), f'{temp_path[1]}_{temp_path[2]}', 'temp/'+i)
             conf.logmn.log_info(f'set a temporary asset from resourcepack {path}: {temp_path[0].title()}, {temp_path[1]}_{temp_path[2]}, temp/{i}')
     conf.logmn.log_info(f'fully loaded and set the assets from resourcepack {path}')
 
@@ -41,16 +41,22 @@ def load_from_resourcepack(rspk_path, section, setting, streaming=False):
     conf.logmn.log_info(f'starting to load asset on {section}-{setting} from resourcepack {rspk_path}')
     archive = zipfile.ZipFile(rspk_path, 'r')
     asset_path = conf.set_settings(section, setting)
-    conf.logmn.log_info('resourcepack loaded, asset found in setting.ini, extracting...')
-    conf.create_path('temp')
-    archive.extract(asset_path[asset_path.find('/')+1:], 'temp')
-    if section == 'Sprites':
-        result = arcade.Sprite(asset_path)
-    elif section == 'Audio':
-        result = arcade.load_sound(asset_path, streaming)
+    if asset_path.startswith('temp'):
+        conf.logmn.log_info('resourcepack loaded, asset found in setting.ini, extracting...')
+        conf.create_path('temp')
+        archive.extract(asset_path[asset_path.find('/')+1:], 'temp')
+        result = None
+        if section == 'Sprites':
+            result = arcade.Sprite(asset_path)
+        elif section == 'Audio':
+            result = arcade.load_sound(asset_path, streaming)
+        else:
+            conf.logmn.log_error('incorrect section, how the hell did you get here???')
+            raise Exception('incorrect section, how the hell did you get here???')
+        if result is not None:
+            conf.logmn.log_info('loaded the asset, deleting temp file...')
+            conf.remove_path('temp', True)
+            return result
     else:
-        conf.logmn.log_error('incorrect section, how the hell did you get here???')
-        return None
-    conf.logmn.log_info('loaded the asset, deleting temp file...')
-    conf.remove_path('temp', True)
-    return result
+        conf.logmn.log_warning('no asset found from resourcepack, abort')
+        raise Exception('no asset found from resourcepack, abort')

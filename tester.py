@@ -1,5 +1,5 @@
 import zipfile, arcade
-from file_mngr.conf_mngr import return_assets_dicts, remove_path, create_path, set_temporary_asset_from_resourcepack, load_settings, set_settings, remove_file
+from file_mngr.conf_mngr import return_assets_dicts, remove_path, create_path, load_settings, set_settings, remove_file, update_setting
 
 archive = zipfile.ZipFile('resourcepacks/assets.zip', 'r')
 data = archive.namelist()
@@ -18,7 +18,7 @@ for i in data:
     if not i.endswith('/') and i.startswith(tuple(existing_paths)):
         temp_path = i[i.find('/')+1:].split('/')
         print(temp_path)
-        set_temporary_asset_from_resourcepack(temp_path[0].title(), f'{temp_path[1]}_{temp_path[2]}', 'temp/'+i)
+        update_setting(temp_path[0].title(), f'{temp_path[1]}_{temp_path[2]}', 'temp/'+i)
         data_full_paths.append(i)
 print(data_full_paths)
 
