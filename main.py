@@ -5,6 +5,7 @@ from arcade.gui import (
     UITextureButton,
     UIFlatButton,
     UIBoxLayout,
+    UIDropdown,
     UISlider,
     UILabel)
 from arcade.gui.experimental import UIScrollArea
@@ -99,6 +100,12 @@ class Main_menu(arcade.View):
         self.assets_conf = self.settings_buttons.add(UIFlatButton(text="Assets"))
         self.back_conf = self.settings_buttons.add(UIFlatButton(text="Back"))
 
+        # graphics settings
+        self.video_buttons = self.ui.add(UIBoxLayout())
+        self.video_label = self.video_buttons.add(UILabel(text='Set resolution'))
+        self.video_drpd = self.video_buttons.add(UIDropdown(default='1280x720', options=['yes', '1280x720']))
+        self.back_vid = self.video_buttons.add(UIFlatButton(text="Back"))
+
         # audio settings
         self.audio_buttons = self.ui.add(UIBoxLayout())
         self.mus_text = self.audio_buttons.add(UILabel(text=f'Music: {int(self.bg_volume * 100)}%'))
@@ -145,6 +152,7 @@ class Main_menu(arcade.View):
 
         # button flags
         self.settings_buttons.visible = False
+        self.video_buttons.visible = False
         self.audio_buttons.visible = False
         self.assets_buttons.visible = False
         rspk_buttons.visible = False
@@ -174,7 +182,8 @@ class Main_menu(arcade.View):
         # settings buttons
         @self.video_conf.event("on_click")
         def on_click(event):
-            print('graphics WIP')
+            self.settings_buttons.visible = False
+            self.video_buttons.visible = True
 
         @self.audio_conf.event("on_click")
         def on_click(event):
@@ -195,6 +204,12 @@ class Main_menu(arcade.View):
         def on_click(event):
             self.settings_buttons.visible = False
             self.menu_buttons.visible = True
+
+        # graphics buttons
+        @self.back_vid.event('on_click')
+        def on_click(event):
+            self.video_buttons.visible = False
+            self.settings_buttons.visible = True
 
         # audio buttons
         @self.mus_slider.event('on_change')
@@ -340,6 +355,7 @@ class Main_menu(arcade.View):
         if self.menu_exists:
             self.menu_buttons.center_on_screen()
             self.settings_buttons.center_on_screen()
+            self.video_buttons.center_on_screen()
             self.audio_buttons.center_on_screen()
             self.assets_buttons.center_on_screen()
             self.menu_exists = False
@@ -350,6 +366,7 @@ class Main_menu(arcade.View):
         if not self.menu_center_flag:
             self.menu_buttons.center_on_screen()
             self.settings_buttons.center_on_screen()
+            self.video_buttons.center_on_screen()
             self.audio_buttons.center_on_screen()
             self.assets_buttons.center_on_screen()
             self.menu_center_flag = True
