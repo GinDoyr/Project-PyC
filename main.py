@@ -102,7 +102,7 @@ class Main_menu(arcade.View):
 
         # graphics settings
         self.video_buttons = self.ui.add(UIBoxLayout())
-        self.video_label = self.video_buttons.add(UILabel(text='Set resolution'))
+        self.video_label = self.video_buttons.add(UILabel(text="Set resolution (still WIP dont even think i'll actually make it)"))
         self.video_drpd = self.video_buttons.add(UIDropdown(default='1280x720', options=['yes', '1280x720']))
         self.back_vid = self.video_buttons.add(UIFlatButton(text="Back"))
 
@@ -306,6 +306,10 @@ class Main_menu(arcade.View):
 
     def on_show_view(self) -> None:
         self.ui.enable()
+        if arcade.load_sound(conf.set_settings("Audio", "music_main menu")) != self.bg_music: # this kinda slows down the return to main menu, but hey, it makes it look like it's doing smth real good eh? :D yeah i might wanna fix it later smh
+            self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
+            self.curr_audio = None
+            self.bg_flag = False
 
     def on_hide_view(self) -> None:
         self.ui.disable()
