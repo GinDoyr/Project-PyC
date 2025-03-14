@@ -34,11 +34,7 @@ def decode(string):
     return str(data)[2:].replace('\\n', '\n')
 
 
-def bin_to_png(data, out_path_name):
-    Image.open(data.save(out_path_name))
-
-
-def read_png_RGBA(file):  # by myersjustinc on https://stackoverflow.com/questions/31572425/list-all-rgba-values-of-an-image-with-pil
+def read_png_RGBA(file, include_file=False):  # big part of the code by myersjustinc on https://stackoverflow.com/questions/31572425/list-all-rgba-values-of-an-image-with-pil
     imgobj = Image.open(file)
     pixels = imgobj.convert('RGBA')
     data = pixels.getdata()
@@ -46,17 +42,18 @@ def read_png_RGBA(file):  # by myersjustinc on https://stackoverflow.com/questio
     for pixel in data:
         lofpixels.extend(pixel)
     imgobj.close()
-    return lofpixels, pixels
+    if include_file:
+        return lofpixels, pixels
+    else:
+        return lofpixels
 
 
 def replace_LSB_in_png(bin_to_replace_with, pngfile):
-    rgba, out_png = read_png_RGBA(pngfile)
+    rgba, out_png = read_png_RGBA(pngfile, True)
     rgba = [rgba[i:i+4] for i in range(0, len(rgba), 4)]
-    print(len(rgba), rgba)
     lsb_to_replace = []
     for i in range(0, len(bin_to_replace_with), 4):
         lsb_to_replace.append([bin_to_replace_with[i], bin_to_replace_with[i+1], bin_to_replace_with[i+2], bin_to_replace_with[i+3]]) # i know this is too big and could be done more efficiently but not now k, fix sometime later
-    print(lsb_to_replace)
     if len(lsb_to_replace) > len(rgba):
         print('ABORT REPLACING LSB! not enough bytes to replace the whole file! ')
     out_data = []
@@ -65,14 +62,13 @@ def replace_LSB_in_png(bin_to_replace_with, pngfile):
             out_byte = []
             for bit in range(4):
                 lsb = int(format(rgba[i][bit], 'b'))
-                out_byte.append(int(str((lsb & ~1) | int(lsb_to_replace[i][bit])), 2))
+                out_byte.append(int(str((lsb & ~1) | int(lsb_to_replace[i][bit])), 2)) # honestly this is some magic to me lol, but hey it works
             print(out_byte)
             out_data.append(tuple(out_byte))
         else:
             out_data.append(tuple(rgba[i]))
-    print(out_data)
     out_png.putdata(out_data)
-    bin_to_png(out_png, pngfile[pngfile.rfind('/')+1:])
+    Image.open(out_png.save(pngfile))
 
 
 test = zip_and_encode('settings.ini')
