@@ -10,9 +10,8 @@ def zip_and_encode(file_path):
     :param file_path: what text-like file to encode
     :return: string of 0 and 1 to do stuff with
     """
-    text = open(file_path).read() + '$END'
+    text = open(file_path).read() + '$END-ZAE'
     code = base64.b64encode(zlib.compress(text.encode('utf-8'), 9))
-    print(code)
     binar = ' '.join(format(ord(x), 'b') for x in str(code)[2:])
     fin = []
     for i in binar.split(' '):
@@ -35,8 +34,8 @@ def decode(string):
     return str(data)[2:].replace('\\n', '\n')
 
 
-def bin_to_png(bytes, out_path_name):
-    Image.open(BytesIO(bytes)).save(out_path_name)
+def bin_to_png(data, out_path_name):
+    Image.open(data.save(out_path_name))
 
 
 def read_png_RGBA(file):  # by myersjustinc on https://stackoverflow.com/questions/31572425/list-all-rgba-values-of-an-image-with-pil
@@ -47,27 +46,34 @@ def read_png_RGBA(file):  # by myersjustinc on https://stackoverflow.com/questio
     for pixel in data:
         lofpixels.extend(pixel)
     imgobj.close()
-    return lofpixels
+    return lofpixels, pixels
 
 
 def replace_LSB_in_png(bin_to_replace_with, pngfile):
-    rgba = read_png_RGBA(pngfile)
-    if len(bin_to_replace_with) > len(rgba):
+    rgba, out_png = read_png_RGBA(pngfile)
+    rgba = [rgba[i:i+4] for i in range(0, len(rgba), 4)]
+    print(len(rgba), rgba)
+    lsb_to_replace = []
+    for i in range(0, len(bin_to_replace_with), 4):
+        lsb_to_replace.append([bin_to_replace_with[i], bin_to_replace_with[i+1], bin_to_replace_with[i+2], bin_to_replace_with[i+3]]) # i know this is too big and could be done more efficiently but not now k, fix sometime later
+    print(lsb_to_replace)
+    if len(lsb_to_replace) > len(rgba):
         print('ABORT REPLACING LSB! not enough bytes to replace the whole file! ')
+    out_data = []
     for i in range(len(rgba)):
-        lsb = int(format(rgba[i], 'b'))
-        if i in range(len(bin_to_replace_with)):
-            rgba[i] = int(str((lsb & ~1) | int(bin_to_replace_with[i])), 2)
+        if i in range(len(lsb_to_replace)):
+            out_byte = []
+            for bit in range(4):
+                lsb = int(format(rgba[i][bit], 'b'))
+                out_byte.append(int(str((lsb & ~1) | int(lsb_to_replace[i][bit])), 2))
+            print(out_byte)
+            out_data.append(tuple(out_byte))
         else:
-            rgba[i] = lsb
-    for i in range(len(rgba)):
-        rgba[i] = str(rgba[i])
-    rgba = ''.join(rgba)
-    out = int(rgba, 2).to_bytes((len(rgba) + 7) // 8, byteorder='big')
-    print(out)
-    bin_to_png(out, pngfile[pngfile.rfind('/')+1:])
+            out_data.append(tuple(rgba[i]))
+    print(out_data)
+    out_png.putdata(out_data)
+    bin_to_png(out_png, pngfile[pngfile.rfind('/')+1:])
 
 
 test = zip_and_encode('settings.ini')
 test_bytes = read_png_RGBA('../difficulties/easy.png')
-replace_LSB_in_png(test, '../difficulties/easy.png')
