@@ -1,6 +1,5 @@
 import zlib, base64
 from PIL import Image
-from io import BytesIO
 
 
 def zip_and_encode(file_path):
@@ -29,6 +28,8 @@ def decode(string):
     :return: decoded text
     """
     fin = int(''.join(string), 2)
+    for i in range(len(str(fin))):
+
     code = bytes(fin.to_bytes((fin.bit_length() + 7) // 8, 'big').decode(), 'utf-8')
     data = zlib.decompress(base64.b64decode(code))
     return str(data)[2:].replace('\\n', '\n')
@@ -41,7 +42,6 @@ def read_png_RGBA(file, include_file=False):  # big part of the code by myersjus
     lofpixels = []
     for pixel in data:
         lofpixels.extend(pixel)
-    imgobj.close()
     if include_file:
         return lofpixels, pixels
     else:
@@ -63,13 +63,24 @@ def replace_LSB_in_png(bin_to_replace_with, pngfile):
             for bit in range(4):
                 lsb = int(format(rgba[i][bit], 'b'))
                 out_byte.append(int(str((lsb & ~1) | int(lsb_to_replace[i][bit])), 2)) # honestly this is some magic to me lol, but hey it works
-            print(out_byte)
             out_data.append(tuple(out_byte))
         else:
             out_data.append(tuple(rgba[i]))
     out_png.putdata(out_data)
-    Image.open(out_png.save(pngfile))
-
+    try:
+        Image.open(out_png.save(pngfile[pngfile.rfind('/')+1:]))
+    except AttributeError:  # this just ignores that unknown error that keeps happening when saving, idk why it does that but yeah
+        pass
 
 test = zip_and_encode('settings.ini')
 test_bytes = read_png_RGBA('../difficulties/easy.png')
+replace_LSB_in_png(test, '../difficulties/easy.png')
+image_in = read_png_RGBA('easy.png')
+out_bs = []
+for i in image_in:
+    if i == 0 or i == 1:
+        out_bs.append(str(i))
+    else:
+        out_bs.append(str((bin(i))[-1]))
+print(''.join(out_bs))
+print(decode(out_bs))
