@@ -44,7 +44,8 @@ def load_from_resourcepack(rspk_path, section, setting, streaming=False, scale=1
     asset_path = conf.set_settings(section, setting)
     if asset_path.startswith('temp'):
         conf.logmn.log_info('resourcepack loaded, asset found in setting.ini, extracting...')
-        conf.create_path('temp')
+        if not conf.check_path('temp'):
+            conf.create_path('temp')
         archive.extract(asset_path[asset_path.find('/')+1:], 'temp')
         result = None
         if section == 'Sprites':
