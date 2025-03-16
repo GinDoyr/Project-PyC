@@ -12,7 +12,7 @@ from arcade.gui.experimental import UIScrollArea
 import file_mngr.conf_mngr as conf
 import file_mngr.zip_mngr as zipmn
 import game_loop
-import asset_selector
+import asset_selector  # might wanna smh optimize the imports on all the other stuff, look if its possible plz :(
 
 
 win_title = "Project: PyC"
