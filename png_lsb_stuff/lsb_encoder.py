@@ -1,5 +1,6 @@
 # eventually decided to separate the decoding and encoding parts
-from lsb_decoder import read_png_RGBA, zlib, base64, conf, Image
+from png_lsb_stuff.lsb_decoder import read_png_RGBA, zlib, base64, conf, Image
+
 
 def zip_and_encode(file_path):
     """

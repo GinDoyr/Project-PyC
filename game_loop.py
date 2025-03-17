@@ -66,22 +66,10 @@ class GameLoop(arcade.View):
         # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
         if conf.set_settings('Settings', 'resourcepack') != 'None':  # i should definitely make this a function somehow, very bad i keep repeating it over and over
             zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
-            try:
-                self.player_sprite = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_sprite', scale=0.2)
-            except:
-                self.player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'), scale=0.2)
-            try:
-                self.pl_bullet_sprite = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_bullet')
-            except:
-                self.pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet'))
-            try:
-                self.pl_crsh = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_crosshair')
-            except:
-                self.pl_crsh = arcade.Sprite(conf.set_settings("Sprites", "player_crosshair"))
-            try:
-                self.pl_bullet_audio = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'player_bullet')
-            except:
-                self.pl_bullet_audio = arcade.load_sound(conf.set_settings("Audio", "player_bullet"))
+            self.player_sprite = zipmn..try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_sprite', scale=0.2)
+            self.pl_bullet_sprite = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_bullet')
+            self.pl_crsh = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_crosshair')
+            self.pl_bullet_audio = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'player_bullet')
         else:
             self.player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'), scale=0.2)
             self.pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet'))
