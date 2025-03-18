@@ -14,9 +14,9 @@ import file_mngr.zip_mngr as zipmn
 import game_loop
 import asset_selector  # might wanna smh optimize the imports on all the other stuff, look if its possible plz :(
 
-
-win_title = "Project: PyC"
+conf.logmn.log_info('starting...')
 conf.load_settings()
+win_title = "Project: PyC"
 win_width = int(conf.set_settings("Settings", "win_width"))
 win_height = int(conf.set_settings("Settings", "win_height"))
 TEX_RED_BUTTON_NORMAL = arcade.load_texture(":resources:gui_basic_assets/button/red_normal.png")
@@ -30,7 +30,7 @@ window.center_window()
 class Main_menu(arcade.View):
     def __init__(self):
         super().__init__()
-        conf.logmn.log_info('launching!')
+        conf.logmn.log_info('initializing main menu')
 
         # misc
         self.background_color = arcade.color.BLACK
@@ -42,8 +42,8 @@ class Main_menu(arcade.View):
         self.curr_audio = None
         if conf.set_settings('Settings', 'resourcepack') != 'None':
             zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
-            self.rspk_curr = conf.set_settings('Settings', 'resourcepack')
-            self.rspk_curr = self.rspk_curr[self.rspk_curr.find('/')+1:]
+            temp = conf.set_settings('Settings', 'resourcepack')
+            self.rspk_curr = temp[temp.find('/')+1:]
             try:
                 self.bg_music = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio',
                                                              'music_main menu')
@@ -61,6 +61,7 @@ class Main_menu(arcade.View):
         self.resize_flag = False
         self.menu_center_flag = False
         self.menu_exists = False
+        self.reset_flag = False
 
         # gui
         self.ui = UIManager()
@@ -293,7 +294,6 @@ class Main_menu(arcade.View):
                 print('reset resourcepack to default (aka None)')
                 conf.logmn.log_info('reset resourcepack to default (aka None)')
 
-
         @rspk_back.event('on_click')
         def on_click(event):
             rspk_buttons.visible = False
@@ -303,8 +303,12 @@ class Main_menu(arcade.View):
         self.rspk_curr = event.source.text
         self.rspk_text.text = f'Selected resourcepack: \n{self.rspk_curr}'
 
-
     def on_show_view(self) -> None:
+        self.window.width = int(conf.set_settings("Settings", "win_width"))
+        self.window.height = int(conf.set_settings("Settings", "win_height"))
+        self.window.center_window()
+        if self.reset_flag:
+            self.__init__()
         self.ui.enable()
         if arcade.load_sound(conf.set_settings("Audio", "music_main menu")) != self.bg_music: # this kinda slows down the return to main menu, but hey, it makes it look like it's doing smth real good eh? :D yeah i might wanna fix it later smh
             self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
@@ -312,6 +316,7 @@ class Main_menu(arcade.View):
             self.bg_flag = False
 
     def on_hide_view(self) -> None:
+        self.reset_flag = True
         self.ui.disable()
         self.menu_exists = True
         if self.bg_flag:

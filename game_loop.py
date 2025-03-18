@@ -32,6 +32,8 @@ def rotate_around_point(sprite, point, degrees):
 class GameLoop(arcade.View):
     def __init__(self, main_menu):
         super().__init__()
+        self.window.width, self.window.height = self.window.width//4, 7*self.window.height//8
+        self.window.center_window()
 
         conf.logmn.log_info('launching game loop')
 
@@ -94,7 +96,6 @@ class GameLoop(arcade.View):
                 background.left, background.bottom = x, y
                 self.sprite_list.append(background)
 
-
         # sprite lists
         self.entities_list = arcade.SpriteList()
         self.sprite_list.append(self.player.sprite)
@@ -114,17 +115,21 @@ class GameLoop(arcade.View):
         self.pl_bul_hitbox.change_x = 0
 
         if self.up_pressed and not self.down_pressed:
-            self.player.sprite.change_y = self.pl_speed
-            self.pl_bul_hitbox.change_y = self.player.sprite.change_y
+            if self.player.sprite.top + self.pl_speed <= self.window.height:
+                self.player.sprite.change_y = self.pl_speed
+                self.pl_bul_hitbox.change_y = self.player.sprite.change_y
         elif self.down_pressed and not self.up_pressed:
-            self.player.sprite.change_y = -self.pl_speed
-            self.pl_bul_hitbox.change_y = self.player.sprite.change_y
+            if self.player.sprite.bottom - self.pl_speed >= 0:
+                self.player.sprite.change_y = -self.pl_speed
+                self.pl_bul_hitbox.change_y = self.player.sprite.change_y
         if self.left_pressed and not self.right_pressed:
-            self.player.sprite.change_x = -self.pl_speed
-            self.pl_bul_hitbox.change_x = self.player.sprite.change_x
+            if self.player.sprite.left - self.pl_speed >= 0:
+                self.player.sprite.change_x = -self.pl_speed
+                self.pl_bul_hitbox.change_x = self.player.sprite.change_x
         elif self.right_pressed and not self.left_pressed:
-            self.player.sprite.change_x = self.pl_speed
-            self.pl_bul_hitbox.change_x = self.player.sprite.change_x
+            if self.player.sprite.right + self.pl_speed <= self.window.width:
+                self.player.sprite.change_x = self.pl_speed
+                self.pl_bul_hitbox.change_x = self.player.sprite.change_x
 
     def update_player_angle(self, x, y):
         x_angle = x - self.player.sprite.center_x
@@ -132,7 +137,26 @@ class GameLoop(arcade.View):
         angle = math.atan2(-y_angle, x_angle)
         prev_angle = self.player.sprite.angle
         self.player.sprite.angle = math.degrees(angle) + 90
-        rotate_around_point(self.pl_bul_hitbox, self.player.sprite.position, self.player.sprite.angle - prev_angle)
+        angle = self.player.sprite.angle
+        print(angle)
+        if 0 <= angle < 45:
+            print('1')
+        elif 45 <= angle < 90:
+            print('2')
+        elif 90 <= angle < 135:
+            print('3')
+        elif 135 <= angle < 180:
+            print('4')
+        elif 180 <= angle < 225:
+            print('5')
+        elif 225 <= angle < 270:
+            print('6')
+        elif -90 <= angle < -45:
+            print('7')
+        elif -45 <= angle < 0:
+            print('8')
+
+        rotate_around_point(self.pl_bul_hitbox, self.player.sprite.position, angle - prev_angle)
 
     def create_bullets(self):
         arcade.play_sound(self.player.bullet_audio, volume=float(conf.set_settings('Settings', 'sfx_volume')))
@@ -182,38 +206,31 @@ class GameLoop(arcade.View):
         self.update_bullets()
         self.update_crosshair(self.mouse_x, self.mouse_y)
         self.update_player_angle(self.mouse_x, self.mouse_y)
+        self.update_player_speed()
 
     def on_key_press(self, key, key_modifiers):
         if key == arcade.key.ESCAPE:
             self.window.show_view(self.main_menu)
         if key == arcade.key.A:
             self.left_pressed = True
-            self.update_player_speed()
         if key == arcade.key.D:
             self.right_pressed = True
-            self.update_player_speed()
         if key == arcade.key.W:
             self.up_pressed = True
-            self.update_player_speed()
         if key == arcade.key.S:
             self.down_pressed = True
-            self.update_player_speed()
         if key == arcade.key.SPACE:
             self.shoot_flag = True
 
     def on_key_release(self, key, key_modifiers):
         if key == arcade.key.A:
             self.left_pressed = False
-            self.update_player_speed()
         if key == arcade.key.D:
             self.right_pressed = False
-            self.update_player_speed()
         if key == arcade.key.W:
             self.up_pressed = False
-            self.update_player_speed()
         if key == arcade.key.S:
             self.down_pressed = False
-            self.update_player_speed()
         if key == arcade.key.SPACE:
             self.shoot_flag = False
 
