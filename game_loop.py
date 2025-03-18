@@ -42,12 +42,9 @@ class GameLoop(arcade.View):
 
         # sound
         self.curr_audio = None
-        if conf.set_settings('Settings', 'resourcepack') != 'None':  # and so this is probably going to happen everywhere... i still don't know whether i should make this a func or not
+        if conf.set_settings('Settings', 'resourcepack') != 'None':
             zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
-            try:
-                self.bg_music = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'music_game', streaming=True)
-            except:
-                self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_game"), streaming=True)
+            self.bg_music = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'music_game', streaming=True)
         else:
             self.bg_music = arcade.load_sound(conf.set_settings('Audio', 'music_game'), streaming=True)
 
@@ -64,20 +61,19 @@ class GameLoop(arcade.View):
 
         # player stuff
         # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
-        if conf.set_settings('Settings', 'resourcepack') != 'None':  # i should definitely make this a function somehow, very bad i keep repeating it over and over
-            zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
-            self.player_sprite = zipmn..try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_sprite', scale=0.2)
-            self.pl_bullet_sprite = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_bullet')
+        if conf.set_settings('Settings', 'resourcepack') != 'None':  # ok so i've made some function but still looks like a mess. or not. idk, but it works :D
+            player_sprite = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_sprite', scale=0.2)
+            pl_bullet_sprite = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_bullet')
             self.pl_crsh = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_crosshair')
-            self.pl_bullet_audio = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'player_bullet')
+            pl_bullet_audio = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'player_bullet')
         else:
-            self.player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'), scale=0.2)
-            self.pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet'))
+            player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'), scale=0.2)
+            pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet'))
             self.pl_crsh = arcade.Sprite(conf.set_settings("Sprites", "player_crosshair"))
-            self.pl_bullet_audio = arcade.load_sound(conf.set_settings("Audio", "player_bullet"))
+            pl_bullet_audio = arcade.load_sound(conf.set_settings("Audio", "player_bullet"))
         self.pl_bullet_speed = 10
         self.pl_bullet_recharge = 6  # higher - faster
-        self.player = player.Player(self.player_sprite, self.pl_bullet_sprite, self.pl_bullet_audio)
+        self.player = player.Player(player_sprite, pl_bullet_sprite, pl_bullet_audio)
         self.pl_speed = 10
         self.player.sprite.center_x = self.window.center_x
         self.player.sprite.center_y = self.window.center_y
@@ -85,8 +81,21 @@ class GameLoop(arcade.View):
         self.pl_bul_hitbox.bottom = self.player.sprite.top
         self.pl_bul_hitbox.center_x = self.player.sprite.center_x
 
-        # sprite lists
+        # background attempt and init of main sprite list
         self.sprite_list = arcade.SpriteList()
+        if conf.set_settings('Settings', 'resourcepack') != 'None':
+            self.bg_sprite = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites',
+                                                                'other_background')
+        else:
+            self.bg_sprite = arcade.Sprite(conf.set_settings('Sprites', 'other_background'))
+        for x in range(0, self.window.width, int(self.bg_sprite.width)):
+            for y in range(0, self.window.height, int(self.bg_sprite.height)):
+                background = arcade.Sprite(self.bg_sprite.texture)
+                background.left, background.bottom = x, y
+                self.sprite_list.append(background)
+
+
+        # sprite lists
         self.entities_list = arcade.SpriteList()
         self.sprite_list.append(self.player.sprite)
         self.sprite_list.append(self.pl_crsh)

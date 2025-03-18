@@ -27,10 +27,11 @@ class AssetSelector(arcade.View):
             exit()
         for i in dropdown_options:
             for v in dropdown_options.get(i):
-                if not conf.check_path(f'assets/{call.lower()}/{i.lower()}/{v.lower()}'):
-                    conf.create_path(f'assets/{call.lower()}/{i.lower()}/{v.lower()}')
-                    print(f'created assets/{call.lower()}/{i.lower()}/{v.lower()}')
-                    conf.logmn.log_info(f'created assets/{call.lower()}/{i.lower()}/{v.lower()}')
+                path = f'assets/{call.lower()}/{i.lower()}/{v.lower()}'
+                if not conf.check_path(path):
+                    conf.create_path(path)
+                    print(f'created {path}')
+                    conf.logmn.log_info(f'created {path}')
 
 
         # sound
@@ -203,7 +204,7 @@ class AssetSelector(arcade.View):
                         conf.logmn.log_info(f'loaded {filename}')
                         self.__vertical_list.clear()
                         for i in conf.return_contents(
-                                f'assets/{self.__call.lower()}/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}'):
+                                f'assets/{call.lower()}/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}'):
                             button = UIFlatButton(height=30, size_hint=(1, None), text=f"{i}")
                             self.__vertical_list.add(button)
                             button.on_click = self.__selector_click
