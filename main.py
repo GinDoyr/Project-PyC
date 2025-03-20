@@ -44,13 +44,7 @@ class Main_menu(arcade.View):
             zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
             temp = conf.set_settings('Settings', 'resourcepack')
             self.rspk_curr = temp[temp.find('/')+1:]
-            try:
-                self.bg_music = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio',
-                                                             'music_main menu')
-            except Exception as e:
-                print(f'no main menu music in archive! {e}')
-                conf.logmn.log_warning(f'no main menu music in archive! {e}')
-                self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
+            self.bg_music = zipmn.try_loading_from_resourcepack('Audio', 'music_main menu')
         else:
             self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
         self.bg_volume = float(conf.set_settings("Settings", "bg_volume"))
@@ -307,7 +301,7 @@ class Main_menu(arcade.View):
         self.window.width = int(conf.set_settings("Settings", "win_width"))
         self.window.height = int(conf.set_settings("Settings", "win_height"))
         self.window.center_window()
-        if self.reset_flag:
+        if self.reset_flag:  # a very, VERY crude way, but idk how to fix the buttons disappearing after leaving the game loop rn. hoping to make smth better than this
             self.__init__()
         self.ui.enable()
         if arcade.load_sound(conf.set_settings("Audio", "music_main menu")) != self.bg_music: # this kinda slows down the return to main menu, but hey, it makes it look like it's doing smth real good eh? :D yeah i might wanna fix it later smh

@@ -65,22 +65,24 @@ def load_from_resourcepack(rspk_path, section, setting, streaming=False, scale=1
         raise Exception('no asset found from resourcepack, abort')
 
 
-def try_loading_from_resourcepack(rspk_path, section, setting, streaming=False, scale=1.0):
+def try_loading_from_resourcepack(section, setting, streaming=False, scale=1.0):
     """
     BASICALLY load_from_resourcepack, but either returns the found file from pack or sets the one in the settings
     load texture/audio from a resourcepack by temporarily extracting the file and assigning it to supported type
     group extraction is planned but highly unlikely
     currently texture supports only static images, as i still haven't figured out how i wanted to do animated stuff
-    :param rspk_path: path to resourcepack (should've probably just made it a name but i think path is a bit safer ok)
     :param section: section in settings.ini
     :param setting: setting in settings.ini
     :param streaming: for arcade's audio streaming, default False
     :param scale: for arcade's sprites, default 1.0, change either with a tuple (x,y) or a float
     :return: arcade.Sprite or arcade.Sound depending on what was chosen
     """
+    conf.logmn.log_info(f'attempting to load from resourcepack: {section}, {setting}')
+    rspk_path = conf.set_settings('Settings', 'resourcepack')
     try:
         return load_from_resourcepack(rspk_path, section, setting, streaming, scale)
     except:
+        conf.logmn.log_info('asset not found in resourcepack, setting from config...')
         if section == 'Audio':
             return arcade.load_sound(conf.set_settings(section, setting), streaming=streaming)
         else:

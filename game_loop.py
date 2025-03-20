@@ -32,8 +32,9 @@ def rotate_around_point(sprite, point, degrees):
 class GameLoop(arcade.View):
     def __init__(self, main_menu):
         super().__init__()
-        self.window.width, self.window.height = self.window.width//4, 7*self.window.height//8
-        self.window.center_window()
+        # commented for now, resolve later
+        # self.window.width, self.window.height = self.window.width//4, 7*self.window.height//8
+        # self.window.center_window()
 
         conf.logmn.log_info('launching game loop')
 
@@ -64,13 +65,13 @@ class GameLoop(arcade.View):
         # player stuff
         # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
         if conf.set_settings('Settings', 'resourcepack') != 'None':  # ok so i've made some function but still looks like a mess. or not. idk, but it works :D
-            player_sprite = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_sprite', scale=0.2)
-            pl_bullet_sprite = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_bullet')
-            self.pl_crsh = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites', 'player_crosshair')
-            pl_bullet_audio = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'player_bullet')
+            player_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'player_sprite', scale=0.2)
+            pl_bullet_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'player_bullet', scale=2.0)
+            self.pl_crsh = zipmn.try_loading_from_resourcepack('Sprites', 'player_crosshair')
+            pl_bullet_audio = zipmn.try_loading_from_resourcepack('Audio', 'player_bullet')
         else:
             player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'), scale=0.2)
-            pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet'))
+            pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet'), scale=2.0)
             self.pl_crsh = arcade.Sprite(conf.set_settings("Sprites", "player_crosshair"))
             pl_bullet_audio = arcade.load_sound(conf.set_settings("Audio", "player_bullet"))
         self.pl_bullet_speed = 10
@@ -86,15 +87,36 @@ class GameLoop(arcade.View):
         # background attempt and init of main sprite list
         self.sprite_list = arcade.SpriteList()
         if conf.set_settings('Settings', 'resourcepack') != 'None':
-            self.bg_sprite = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Sprites',
-                                                                'other_background')
+            self.bg_texture = zipmn.try_loading_from_resourcepack('Sprites', 'other_background').texture
         else:
-            self.bg_sprite = arcade.Sprite(conf.set_settings('Sprites', 'other_background'))
-        for x in range(0, self.window.width, int(self.bg_sprite.width)):
-            for y in range(0, self.window.height, int(self.bg_sprite.height)):
-                background = arcade.Sprite(self.bg_sprite.texture)
+            self.bg_texture = arcade.Sprite(conf.set_settings('Sprites', 'other_background')).texture
+        for x in range(0, self.window.width, int(self.bg_texture.width)):
+            for y in range(0, self.window.height, int(self.bg_texture.height)):
+                background = arcade.Sprite(self.bg_texture)
                 background.left, background.bottom = x, y
                 self.sprite_list.append(background)
+
+        # wall attempt...
+        self.wall_sprlist = arcade.SpriteList()
+        if conf.set_settings('Settings', 'resourcepack') != 'None':
+            self.wall_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'other_walls').texture
+        else:
+            self.wall_sprite = arcade.Sprite(conf.set_settings('Sprites', 'other_walls')).texture
+        for x in range(0, self.window.width + int(self.wall_sprite.width), int(self.wall_sprite.width)):
+            if x >= self.window.width:
+                x = self.window.width - self.wall_sprite.width
+            for y in range(0, self.window.height + int(self.wall_sprite.height), int(self.wall_sprite.height)):
+                if y >= self.window.height:
+                    y = self.window.height - self.wall_sprite.height
+                if y == 0 or y == self.window.height - self.wall_sprite.height:
+                    wall = arcade.Sprite(self.wall_sprite)
+                    wall.left, wall.bottom = x, y
+                    self.wall_sprlist.append(wall)
+                elif x == 0 or x == self.window.width - self.wall_sprite.width:
+                    wall = arcade.Sprite(self.wall_sprite)
+                    wall.left, wall.bottom = x, y
+                    self.wall_sprlist.append(wall)
+
 
         # sprite lists
         self.entities_list = arcade.SpriteList()
@@ -115,19 +137,19 @@ class GameLoop(arcade.View):
         self.pl_bul_hitbox.change_x = 0
 
         if self.up_pressed and not self.down_pressed:
-            if self.player.sprite.top + self.pl_speed <= self.window.height:
+            if self.player.sprite.top + self.pl_speed <= self.window.height - self.wall_sprite.height:
                 self.player.sprite.change_y = self.pl_speed
                 self.pl_bul_hitbox.change_y = self.player.sprite.change_y
         elif self.down_pressed and not self.up_pressed:
-            if self.player.sprite.bottom - self.pl_speed >= 0:
+            if self.player.sprite.bottom - self.pl_speed >= self.wall_sprite.height:
                 self.player.sprite.change_y = -self.pl_speed
                 self.pl_bul_hitbox.change_y = self.player.sprite.change_y
         if self.left_pressed and not self.right_pressed:
-            if self.player.sprite.left - self.pl_speed >= 0:
+            if self.player.sprite.left - self.pl_speed >= self.wall_sprite.width:
                 self.player.sprite.change_x = -self.pl_speed
                 self.pl_bul_hitbox.change_x = self.player.sprite.change_x
         elif self.right_pressed and not self.left_pressed:
-            if self.player.sprite.right + self.pl_speed <= self.window.width:
+            if self.player.sprite.right + self.pl_speed <= self.window.width - self.wall_sprite.width:
                 self.player.sprite.change_x = self.pl_speed
                 self.pl_bul_hitbox.change_x = self.player.sprite.change_x
 
@@ -138,23 +160,23 @@ class GameLoop(arcade.View):
         prev_angle = self.player.sprite.angle
         self.player.sprite.angle = math.degrees(angle) + 90
         angle = self.player.sprite.angle
-        print(angle)
-        if 0 <= angle < 45:
-            print('1')
-        elif 45 <= angle < 90:
-            print('2')
-        elif 90 <= angle < 135:
-            print('3')
-        elif 135 <= angle < 180:
-            print('4')
-        elif 180 <= angle < 225:
-            print('5')
-        elif 225 <= angle < 270:
-            print('6')
-        elif -90 <= angle < -45:
-            print('7')
-        elif -45 <= angle < 0:
-            print('8')
+        # print(angle)
+        # if 0 <= angle < 45:
+        #     print('1')
+        # elif 45 <= angle < 90:
+        #     print('2')
+        # elif 90 <= angle < 135:
+        #     print('3')
+        # elif 135 <= angle < 180:
+        #     print('4')
+        # elif 180 <= angle < 225:
+        #     print('5')
+        # elif 225 <= angle < 270:
+        #     print('6')
+        # elif -90 <= angle < -45:
+        #     print('7')
+        # elif -45 <= angle < 0:
+        #     print('8')
 
         rotate_around_point(self.pl_bul_hitbox, self.player.sprite.position, angle - prev_angle)
 
@@ -171,7 +193,7 @@ class GameLoop(arcade.View):
     def update_bullets(self):
         self.entities_list.update()
         for entity in self.entities_list:
-            if entity.bottom > self.window.height or entity.top < 0 or entity.right < 0 or entity.left > self.window.width:
+            if entity.top > self.window.height - self.wall_sprite.height or entity.bottom < self.wall_sprite.height or entity.left < self.wall_sprite.width or entity.right > self.window.width - self.wall_sprite.width:
                 entity.remove_from_sprite_lists()
 
     def on_show_view(self):
@@ -187,6 +209,7 @@ class GameLoop(arcade.View):
     def on_draw(self):
         self.clear()
         self.sprite_list.draw()
+        self.wall_sprlist.draw()
         self.entities_list.draw()
 
     def on_update(self, delta_time):
