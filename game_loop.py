@@ -41,7 +41,7 @@ class GameLoop(arcade.View):
         # misc
         self.clocker = arcade.clock.Clock()
         self.main_menu = main_menu
-        self.mouse_x, self.mouse_y = self.window.center_x, self.window.center_y
+        self.mouse_x, self.mouse_y = 3000, 3000
 
         # sound
         self.curr_audio = None
@@ -78,23 +78,23 @@ class GameLoop(arcade.View):
         self.pl_bullet_recharge = 6  # higher - faster
         self.player = player.Player(player_sprite, pl_bullet_sprite, pl_bullet_audio)
         self.pl_speed = 10
-        self.player.sprite.center_x = self.window.center_x
-        self.player.sprite.center_y = self.window.center_y
+        self.player.sprite.center_x = 1500
+        self.player.sprite.center_y = 1500
         self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")
         self.pl_bul_hitbox.bottom = self.player.sprite.top
         self.pl_bul_hitbox.center_x = self.player.sprite.center_x
 
         # background attempt and init of main sprite list
-        self.sprite_list = arcade.SpriteList()
+        self.bg_list = arcade.SpriteList()
         if conf.set_settings('Settings', 'resourcepack') != 'None':
             self.bg_texture = zipmn.try_loading_from_resourcepack('Sprites', 'other_background').texture
         else:
             self.bg_texture = arcade.Sprite(conf.set_settings('Sprites', 'other_background')).texture
-        for x in range(0, self.window.width, int(self.bg_texture.width)):
-            for y in range(0, self.window.height, int(self.bg_texture.height)):
+        for x in range(0, 3000, int(self.bg_texture.width)):
+            for y in range(0, 3000, int(self.bg_texture.height)):
                 background = arcade.Sprite(self.bg_texture)
                 background.left, background.bottom = x, y
-                self.sprite_list.append(background)
+                self.bg_list.append(background)
 
         # wall attempt...
         self.wall_sprlist = arcade.SpriteList()
@@ -102,28 +102,47 @@ class GameLoop(arcade.View):
             self.wall_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'other_walls').texture
         else:
             self.wall_sprite = arcade.Sprite(conf.set_settings('Sprites', 'other_walls')).texture
-        for x in range(0, self.window.width + int(self.wall_sprite.width), int(self.wall_sprite.width)):
-            if x >= self.window.width:
-                x = self.window.width - self.wall_sprite.width
-            for y in range(0, self.window.height + int(self.wall_sprite.height), int(self.wall_sprite.height)):
-                if y >= self.window.height:
-                    y = self.window.height - self.wall_sprite.height
-                if y == 0 or y == self.window.height - self.wall_sprite.height:
+        for x in range(0, 3000 + int(self.wall_sprite.width), int(self.wall_sprite.width)):
+            if x >= 3000:
+                x = 3000 - self.wall_sprite.width
+            for y in range(0, 3000 + int(self.wall_sprite.height), int(self.wall_sprite.height)):
+                if y >= 3000:
+                    y = 3000 - self.wall_sprite.height
+                if y == 0 or y == 3000 - self.wall_sprite.height:
                     wall = arcade.Sprite(self.wall_sprite)
                     wall.left, wall.bottom = x, y
                     self.wall_sprlist.append(wall)
-                elif x == 0 or x == self.window.width - self.wall_sprite.width:
+                elif x == 0 or x == 3000 - self.wall_sprite.width:
                     wall = arcade.Sprite(self.wall_sprite)
                     wall.left, wall.bottom = x, y
                     self.wall_sprlist.append(wall)
 
 
         # sprite lists
+        self.sprite_list = arcade.SpriteList()
         self.entities_list = arcade.SpriteList()
+        self.crosshair = arcade.SpriteList()
+        self.crosshair.append(self.pl_crsh)
         self.sprite_list.append(self.player.sprite)
-        self.sprite_list.append(self.pl_crsh)
         self.sprite_list.append(self.pl_bul_hitbox)
         self.pl_bul_hitbox.visible = False
+
+        # there's the camera (wip, as is everything)
+        self.camera_sprites = arcade.Camera2D()
+        self.camera_gui = arcade.Camera2D()
+
+    def scroll_to_player(self): # taken from arcade camera example
+        """
+        Scroll the window to the player.
+
+        if CAMERA_SPEED is 1, the camera will immediately move to the desired
+        position. Anything between 0 and 1 will have the camera move to the
+        location with a smoother pan.
+        """
+
+        position = (self.player.sprite.center_x, self.player.sprite.center_y)
+        self.camera_sprites.position = arcade.math.lerp_2d(self.camera_sprites.position, position, 1)
+
 
     def update_crosshair(self, x, y):
         self.pl_crsh.center_x = x
@@ -137,7 +156,7 @@ class GameLoop(arcade.View):
         self.pl_bul_hitbox.change_x = 0
 
         if self.up_pressed and not self.down_pressed:
-            if self.player.sprite.top + self.pl_speed <= self.window.height - self.wall_sprite.height:
+            if self.player.sprite.top + self.pl_speed <= 6000 - self.wall_sprite.height:  # to do: normal collision with wall sprite list instead of this bruteforce lol. although it works... idk
                 self.player.sprite.change_y = self.pl_speed
                 self.pl_bul_hitbox.change_y = self.player.sprite.change_y
         elif self.down_pressed and not self.up_pressed:
@@ -149,18 +168,20 @@ class GameLoop(arcade.View):
                 self.player.sprite.change_x = -self.pl_speed
                 self.pl_bul_hitbox.change_x = self.player.sprite.change_x
         elif self.right_pressed and not self.left_pressed:
-            if self.player.sprite.right + self.pl_speed <= self.window.width - self.wall_sprite.width:
+            if self.player.sprite.right + self.pl_speed <= 6000 - self.wall_sprite.width:
                 self.player.sprite.change_x = self.pl_speed
                 self.pl_bul_hitbox.change_x = self.player.sprite.change_x
 
     def update_player_angle(self, x, y):
-        x_angle = x - self.player.sprite.center_x
+        if self.player.sprite.center_x > 1500:  # alr, to do: replace all these 1500 numbers with normal vars and do this updating correctly. peace
+            x_angle = x - (self.player.sprite.center_x - 1500)
+            print(x_angle)!
         y_angle = y - self.player.sprite.center_y
         angle = math.atan2(-y_angle, x_angle)
         prev_angle = self.player.sprite.angle
         self.player.sprite.angle = math.degrees(angle) + 90
         angle = self.player.sprite.angle
-        # print(angle)
+        # print(angle)  # dont mind this, planning to finally do that rotation thingy and i know what's below is something real bad lol
         # if 0 <= angle < 45:
         #     print('1')
         # elif 45 <= angle < 90:
@@ -193,7 +214,8 @@ class GameLoop(arcade.View):
     def update_bullets(self):
         self.entities_list.update()
         for entity in self.entities_list:
-            if entity.top > self.window.height - self.wall_sprite.height or entity.bottom < self.wall_sprite.height or entity.left < self.wall_sprite.width or entity.right > self.window.width - self.wall_sprite.width:
+            if entity.top > 3000 - self.wall_sprite.height or entity.bottom < self.wall_sprite.height or entity.left < self.wall_sprite.width or entity.right > 3000 - self.wall_sprite.width:
+                # ... this is just awful. i really, REALLY need to make this better somehow. later, as is everything :P
                 entity.remove_from_sprite_lists()
 
     def on_show_view(self):
@@ -208,9 +230,14 @@ class GameLoop(arcade.View):
 
     def on_draw(self):
         self.clear()
+        self.camera_sprites.use()
+        self.bg_list.draw()
         self.sprite_list.draw()
         self.wall_sprlist.draw()
         self.entities_list.draw()
+        self.camera_gui.use()  # for later gui use
+        self.crosshair.draw()
+
 
     def on_update(self, delta_time):
         self.sprite_list.update(delta_time)
@@ -228,8 +255,9 @@ class GameLoop(arcade.View):
 
         self.update_bullets()
         self.update_crosshair(self.mouse_x, self.mouse_y)
-        self.update_player_angle(self.mouse_x, self.mouse_y)
+        self.update_player_angle(self.pl_crsh.center_x, self.pl_crsh.center_y)
         self.update_player_speed()
+        self.scroll_to_player()
 
     def on_key_press(self, key, key_modifiers):
         if key == arcade.key.ESCAPE:
