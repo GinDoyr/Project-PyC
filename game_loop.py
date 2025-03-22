@@ -1,6 +1,10 @@
 import arcade
 import arcade.clock
 from arcade.math import rotate_point
+from arcade.gui import (
+    UIManager,
+    UIBoxLayout,
+    UILabel)
 import file_mngr.conf_mngr as conf
 import file_mngr.zip_mngr as zipmn
 import player
@@ -41,13 +45,14 @@ class GameLoop(arcade.View):
         # misc
         self.clocker = arcade.clock.Clock()
         self.main_menu = main_menu
-        self.mouse_x, self.mouse_y = 3000, 3000
+        self.area_x, self.area_y = 2000, 2000
+        self.mouse_x, self.mouse_y = self.window.center
 
         # sound
         self.curr_audio = None
         if conf.set_settings('Settings', 'resourcepack') != 'None':
             zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
-            self.bg_music = zipmn.try_loading_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'music_game', streaming=True)
+            self.bg_music = zipmn.try_loading_from_resourcepack('Audio', 'music_game', streaming=True)
         else:
             self.bg_music = arcade.load_sound(conf.set_settings('Audio', 'music_game'), streaming=True)
 
@@ -64,34 +69,37 @@ class GameLoop(arcade.View):
 
         # player stuff
         # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
-        if conf.set_settings('Settings', 'resourcepack') != 'None':  # ok so i've made some function but still looks like a mess. or not. idk, but it works :D
+        if conf.set_settings('Settings',
+                             'resourcepack') != 'None':  # ok so i've made some function but still looks like a mess. or not. idk, but it works :D
             player_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'player_sprite', scale=0.2)
-            pl_bullet_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'player_bullet', scale=2.0)
+            pl_bullet_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'player_bullet').texture
             self.pl_crsh = zipmn.try_loading_from_resourcepack('Sprites', 'player_crosshair')
+            self.pl_lives = zipmn.try_loading_from_resourcepack('Sprites', 'other_lives').texture
             pl_bullet_audio = zipmn.try_loading_from_resourcepack('Audio', 'player_bullet')
         else:
             player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'), scale=0.2)
-            pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet'), scale=2.0)
+            pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet')).texture  # do this just as a texture since you are using only the texture when creating bullets!!! please!!1 ;(
             self.pl_crsh = arcade.Sprite(conf.set_settings("Sprites", "player_crosshair"))
+            self.pl_lives = arcade.Sprite(conf.set_settings('Sprites', 'other_lives')).texture
             pl_bullet_audio = arcade.load_sound(conf.set_settings("Audio", "player_bullet"))
         self.pl_bullet_speed = 10
         self.pl_bullet_recharge = 6  # higher - faster
         self.player = player.Player(player_sprite, pl_bullet_sprite, pl_bullet_audio)
         self.pl_speed = 10
-        self.player.sprite.center_x = 1500
-        self.player.sprite.center_y = 1500
-        self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")
+        self.player.sprite.center_x = self.area_x // 2
+        self.player.sprite.center_y = self.area_y // 2
+        self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")  # this is the only thing i've come up for the bullet start point. hoping to smh change it later
         self.pl_bul_hitbox.bottom = self.player.sprite.top
         self.pl_bul_hitbox.center_x = self.player.sprite.center_x
 
-        # background attempt and init of main sprite list
+        # background attempt
         self.bg_list = arcade.SpriteList()
         if conf.set_settings('Settings', 'resourcepack') != 'None':
             self.bg_texture = zipmn.try_loading_from_resourcepack('Sprites', 'other_background').texture
         else:
             self.bg_texture = arcade.Sprite(conf.set_settings('Sprites', 'other_background')).texture
-        for x in range(0, 3000, int(self.bg_texture.width)):
-            for y in range(0, 3000, int(self.bg_texture.height)):
+        for x in range(0, self.area_x, int(self.bg_texture.width)):
+            for y in range(0, self.area_y, int(self.bg_texture.height)):
                 background = arcade.Sprite(self.bg_texture)
                 background.left, background.bottom = x, y
                 self.bg_list.append(background)
@@ -102,21 +110,20 @@ class GameLoop(arcade.View):
             self.wall_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'other_walls').texture
         else:
             self.wall_sprite = arcade.Sprite(conf.set_settings('Sprites', 'other_walls')).texture
-        for x in range(0, 3000 + int(self.wall_sprite.width), int(self.wall_sprite.width)):
-            if x >= 3000:
-                x = 3000 - self.wall_sprite.width
-            for y in range(0, 3000 + int(self.wall_sprite.height), int(self.wall_sprite.height)):
-                if y >= 3000:
-                    y = 3000 - self.wall_sprite.height
-                if y == 0 or y == 3000 - self.wall_sprite.height:
+        for x in range(0, self.area_x + int(self.wall_sprite.width), int(self.wall_sprite.width)):
+            if x >= self.area_x:
+                x = self.area_x - self.wall_sprite.width
+            for y in range(0, self.area_y + int(self.wall_sprite.height), int(self.wall_sprite.height)):
+                if y >= self.area_y:
+                    y = self.area_y - self.wall_sprite.height
+                if y == 0 or y == self.area_y - self.wall_sprite.height:
                     wall = arcade.Sprite(self.wall_sprite)
                     wall.left, wall.bottom = x, y
                     self.wall_sprlist.append(wall)
-                elif x == 0 or x == 3000 - self.wall_sprite.width:
+                elif x == 0 or x == self.area_x - self.wall_sprite.width:
                     wall = arcade.Sprite(self.wall_sprite)
                     wall.left, wall.bottom = x, y
                     self.wall_sprlist.append(wall)
-
 
         # sprite lists
         self.sprite_list = arcade.SpriteList()
@@ -127,22 +134,13 @@ class GameLoop(arcade.View):
         self.sprite_list.append(self.pl_bul_hitbox)
         self.pl_bul_hitbox.visible = False
 
-        # there's the camera (wip, as is everything)
+        # there's the camera
         self.camera_sprites = arcade.Camera2D()
         self.camera_gui = arcade.Camera2D()
 
-    def scroll_to_player(self): # taken from arcade camera example
-        """
-        Scroll the window to the player.
-
-        if CAMERA_SPEED is 1, the camera will immediately move to the desired
-        position. Anything between 0 and 1 will have the camera move to the
-        location with a smoother pan.
-        """
-
+    def scroll_to_player(self):
         position = (self.player.sprite.center_x, self.player.sprite.center_y)
         self.camera_sprites.position = arcade.math.lerp_2d(self.camera_sprites.position, position, 1)
-
 
     def update_crosshair(self, x, y):
         self.pl_crsh.center_x = x
@@ -156,7 +154,7 @@ class GameLoop(arcade.View):
         self.pl_bul_hitbox.change_x = 0
 
         if self.up_pressed and not self.down_pressed:
-            if self.player.sprite.top + self.pl_speed <= 6000 - self.wall_sprite.height:  # to do: normal collision with wall sprite list instead of this bruteforce lol. although it works... idk
+            if self.player.sprite.top + self.pl_speed <= self.area_y - self.wall_sprite.height:  # to do: normal collision with wall sprite list instead of this bruteforce lol. although it works... idk
                 self.player.sprite.change_y = self.pl_speed
                 self.pl_bul_hitbox.change_y = self.player.sprite.change_y
         elif self.down_pressed and not self.up_pressed:
@@ -168,15 +166,13 @@ class GameLoop(arcade.View):
                 self.player.sprite.change_x = -self.pl_speed
                 self.pl_bul_hitbox.change_x = self.player.sprite.change_x
         elif self.right_pressed and not self.left_pressed:
-            if self.player.sprite.right + self.pl_speed <= 6000 - self.wall_sprite.width:
+            if self.player.sprite.right + self.pl_speed <= self.area_x - self.wall_sprite.width:
                 self.player.sprite.change_x = self.pl_speed
                 self.pl_bul_hitbox.change_x = self.player.sprite.change_x
 
     def update_player_angle(self, x, y):
-        if self.player.sprite.center_x > 1500:  # alr, to do: replace all these 1500 numbers with normal vars and do this updating correctly. peace
-            x_angle = x - (self.player.sprite.center_x - 1500)
-            print(x_angle)!
-        y_angle = y - self.player.sprite.center_y
+        x_angle = x - self.window.center_x
+        y_angle = y - self.window.center_y
         angle = math.atan2(-y_angle, x_angle)
         prev_angle = self.player.sprite.angle
         self.player.sprite.angle = math.degrees(angle) + 90
@@ -203,7 +199,7 @@ class GameLoop(arcade.View):
 
     def create_bullets(self):
         arcade.play_sound(self.player.bullet_audio, volume=float(conf.set_settings('Settings', 'sfx_volume')))
-        bullet = arcade.Sprite(self.player.bullet_sprite.texture)
+        bullet = arcade.Sprite(self.player.bullet_sprite, scale=3.0)
         angle = math.radians(self.player.sprite.angle)
         bullet.angle = math.degrees(angle)
         bullet.change_y = self.pl_bullet_speed * math.cos(angle)
@@ -214,7 +210,7 @@ class GameLoop(arcade.View):
     def update_bullets(self):
         self.entities_list.update()
         for entity in self.entities_list:
-            if entity.top > 3000 - self.wall_sprite.height or entity.bottom < self.wall_sprite.height or entity.left < self.wall_sprite.width or entity.right > 3000 - self.wall_sprite.width:
+            if entity.top > self.area_y - self.wall_sprite.height or entity.bottom < self.wall_sprite.height or entity.left < self.wall_sprite.width or entity.right > self.area_x - self.wall_sprite.width:
                 # ... this is just awful. i really, REALLY need to make this better somehow. later, as is everything :P
                 entity.remove_from_sprite_lists()
 
@@ -224,9 +220,8 @@ class GameLoop(arcade.View):
 
     def on_hide_view(self):
         self.window.set_mouse_visible(True)
-        arcade.stop_sound(self.curr_audio)
-        print('closing game loop')
-        conf.logmn.log_info('closing game loop')
+        print('paused game')
+        conf.logmn.log_info('paused game')
 
     def on_draw(self):
         self.clear()
@@ -237,15 +232,24 @@ class GameLoop(arcade.View):
         self.entities_list.draw()
         self.camera_gui.use()  # for later gui use
         self.crosshair.draw()
-
+        arcade.draw_rect_filled(arcade.rect.XYWH(self.window.width//2, self.window.height-25, self.window.width+1, 50), arcade.color.BLACK)
+        arcade.draw_rect_outline(arcade.rect.XYWH(self.window.width//2, self.window.height-25, self.window.width+1, 50), arcade.color.GOLDEN_BROWN, 2)
+        for i in range(self.player.lives+1):
+            live = arcade.Sprite(self.pl_lives)
+            if i+1 == 1:
+                live.left = (i+1)*16
+                live.center_y = self.window.height-25
+            else:
+                live.left = (i+1)*16 - (i+1)*8
+                live.center_y = self.window.height - 25
+            arcade.draw_sprite(live)
 
     def on_update(self, delta_time):
         self.sprite_list.update(delta_time)
 
         if not self.recharge_flag:
             self.clocker.tick(delta_time)
-            if self.clocker.ticks_since(0) <= (60 // self.pl_bullet_recharge) * (
-                    self.clocker.ticks // (60 // self.pl_bullet_recharge)):
+            if self.clocker.ticks_since(0) <= (60 // self.pl_bullet_recharge) * (self.clocker.ticks // (60 // self.pl_bullet_recharge)):
                 self.recharge_flag = True
                 self.clocker.tick(0)
 
@@ -261,7 +265,8 @@ class GameLoop(arcade.View):
 
     def on_key_press(self, key, key_modifiers):
         if key == arcade.key.ESCAPE:
-            self.window.show_view(self.main_menu)
+            pause = PauseView(self)
+            self.window.show_view(pause)
         if key == arcade.key.A:
             self.left_pressed = True
         if key == arcade.key.D:
@@ -294,3 +299,51 @@ class GameLoop(arcade.View):
 
     def on_mouse_release(self, x, y, button, key_modifiers):
         self.shoot_flag = False
+
+
+class PauseView(arcade.View):
+    def __init__(self, game_view):
+        super().__init__()
+        self.game = game_view
+
+    def on_draw(self):
+        self.clear()
+        self.game.camera_sprites.use()
+        self.game.bg_list.draw()
+        self.game.sprite_list.draw()
+        self.game.wall_sprlist.draw()
+        self.game.entities_list.draw()
+        self.game.camera_gui.use()
+
+        arcade.draw_text("PAUSED", self.window.center_x, self.window.center_y + 50,
+                         arcade.color.WHITE, font_size=50, anchor_x="center")
+
+        # Show tip to return or reset
+        arcade.draw_text("Press Esc. to return",
+                         self.window.center_x,
+                         self.window.center_y,
+                         arcade.color.WHITE,
+                         font_size=20,
+                         anchor_x="center")
+        arcade.draw_text("Enter - Main Menu",
+                         self.window.center_x,
+                         self.window.center_y - 30,
+                         arcade.color.WHITE,
+                         font_size=20,
+                         anchor_x="center")
+
+    def on_key_press(self, key, modifiers):
+        if key == arcade.key.ESCAPE:
+            print('unpaused game')
+            conf.logmn.log_info('unpaused game')
+            self.window.show_view(self.game)
+        elif key == arcade.key.ENTER:
+            print('closing game')
+            conf.logmn.log_info('closing game')
+            arcade.stop_sound(self.game.curr_audio)
+            self.window.show_view(self.game.main_menu)
+
+    def on_key_release(self, key, modifiers):
+        self.game.on_key_release(key, modifiers)
+
+

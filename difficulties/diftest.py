@@ -1,6 +1,6 @@
 import random
 
-
+# might actually use a csv for this, columns are enemy types and rows are their count / wave of them. boss trigger is a column as well
 def read_and_return_enemies(difficulty, boss=False):
     """
     reads a difficulty png, chooses a random line of enemies from it, return a dictionary with the count of each enemy to be spawned
