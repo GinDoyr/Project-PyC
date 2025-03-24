@@ -47,7 +47,7 @@ def read_png_RGBA(file, include_file=False) -> list[list]:  # big part of the co
 def decode_from_png(png, save_to_file=False, file_path=None, hard_write=False):
     """
     decodes supported stuff from (currently) the first layer of LSB in the png (side note to maybe fix - rn supports only decoding english symbols, should add support for non-english?)\n
-    if needed (not really in my case but why not ¯\\\_(ツ)_/¯), can save the decoded stuff to file
+    if needed (not really in my case but why not ¯\_(ツ)_/¯), can save the decoded stuff to file
     :param png: path to png file which should have encoded stuff in first layers of LSB
     :param save_to_file: should the contents be saved somewhere? if so, pick True. default False
     :param file_path: path (with file) to where the contents should be saved. default None, does something only when save_to_file is True

@@ -77,18 +77,22 @@ class GameLoop(arcade.View):
             self.pl_lives = zipmn.try_loading_from_resourcepack('Sprites', 'other_lives').texture
             pl_bullet_audio = zipmn.try_loading_from_resourcepack('Audio', 'player_bullet')
         else:
-            player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'), scale=0.2)
-            pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_bullet')).texture  # do this just as a texture since you are using only the texture when creating bullets!!! please!!1 ;(
+            player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'))
+            pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites',
+                                                               'player_bullet')).texture  # do this just as a texture since you are using only the texture when creating bullets!!! please!!1 ;(
             self.pl_crsh = arcade.Sprite(conf.set_settings("Sprites", "player_crosshair"))
             self.pl_lives = arcade.Sprite(conf.set_settings('Sprites', 'other_lives')).texture
             pl_bullet_audio = arcade.load_sound(conf.set_settings("Audio", "player_bullet"))
+        pl_bullet_sprite.width, pl_bullet_sprite.height = 10, 28
+        player_sprite.width, player_sprite.height = 64, 64
         self.pl_bullet_speed = 10
         self.pl_bullet_recharge = 6  # higher - faster
         self.player = player.Player(player_sprite, pl_bullet_sprite, pl_bullet_audio)
         self.pl_speed = 10
         self.player.sprite.center_x = self.area_x // 2
         self.player.sprite.center_y = self.area_y // 2
-        self.pl_bul_hitbox = arcade.Sprite("assets/sprites/misc/very_important_1x1.png")  # this is the only thing i've come up for the bullet start point. hoping to smh change it later
+        self.pl_bul_hitbox = arcade.Sprite(
+            "assets/sprites/misc/very_important_1x1.png")  # this is the only thing i've come up for the bullet start point. hoping to smh change it later
         self.pl_bul_hitbox.bottom = self.player.sprite.top
         self.pl_bul_hitbox.center_x = self.player.sprite.center_x
 
@@ -137,6 +141,9 @@ class GameLoop(arcade.View):
         # there's the camera
         self.camera_sprites = arcade.Camera2D()
         self.camera_gui = arcade.Camera2D()
+
+        # score something something! :D
+        self.score = 0
 
     def scroll_to_player(self):
         position = (self.player.sprite.center_x, self.player.sprite.center_y)
@@ -199,7 +206,7 @@ class GameLoop(arcade.View):
 
     def create_bullets(self):
         arcade.play_sound(self.player.bullet_audio, volume=float(conf.set_settings('Settings', 'sfx_volume')))
-        bullet = arcade.Sprite(self.player.bullet_sprite, scale=3.0)
+        bullet = arcade.Sprite(self.player.bullet_sprite)
         angle = math.radians(self.player.sprite.angle)
         bullet.angle = math.degrees(angle)
         bullet.change_y = self.pl_bullet_speed * math.cos(angle)
@@ -232,24 +239,31 @@ class GameLoop(arcade.View):
         self.entities_list.draw()
         self.camera_gui.use()  # for later gui use
         self.crosshair.draw()
-        arcade.draw_rect_filled(arcade.rect.XYWH(self.window.width//2, self.window.height-25, self.window.width+1, 50), arcade.color.BLACK)
-        arcade.draw_rect_outline(arcade.rect.XYWH(self.window.width//2, self.window.height-25, self.window.width+1, 50), arcade.color.GOLDEN_BROWN, 2)
-        for i in range(self.player.lives+1):
-            live = arcade.Sprite(self.pl_lives)
-            if i+1 == 1:
-                live.left = (i+1)*16
-                live.center_y = self.window.height-25
+        arcade.draw_rect_filled(
+            arcade.rect.XYWH(self.window.width // 2, self.window.height - 25, self.window.width, 50),
+            arcade.color.BLACK)
+        arcade.draw_rect_outline(
+            arcade.rect.XYWH(self.window.width // 2, self.window.height - 25, self.window.width + 2, 50),
+            arcade.color.GOLDEN_BROWN, 2)
+        for i in range(self.player.lives + 1):
+            live = arcade.Sprite(self.pl_lives)  # when adding lives do a max of 5 lives!
+            if i + 1 == 1:
+                live.left = (i + 1) * 16
+                live.center_y = self.window.height - 25
             else:
-                live.left = (i+1)*16 - (i+1)*8
+                live.left = (i + 1) * 16 - (i + 1) * 8
                 live.center_y = self.window.height - 25
             arcade.draw_sprite(live)
+        arcade.Text(f"Score: {self.score}", self.window.width - 10, self.window.height - 25, arcade.color.WHITE,
+                    anchor_x="right", anchor_y='center').draw()
 
     def on_update(self, delta_time):
         self.sprite_list.update(delta_time)
 
         if not self.recharge_flag:
             self.clocker.tick(delta_time)
-            if self.clocker.ticks_since(0) <= (60 // self.pl_bullet_recharge) * (self.clocker.ticks // (60 // self.pl_bullet_recharge)):
+            if self.clocker.ticks_since(0) <= (60 // self.pl_bullet_recharge) * (
+                    self.clocker.ticks // (60 // self.pl_bullet_recharge)):
                 self.recharge_flag = True
                 self.clocker.tick(0)
 
@@ -308,29 +322,49 @@ class PauseView(arcade.View):
 
     def on_draw(self):
         self.clear()
+
         self.game.camera_sprites.use()
         self.game.bg_list.draw()
         self.game.sprite_list.draw()
         self.game.wall_sprlist.draw()
         self.game.entities_list.draw()
+
         self.game.camera_gui.use()
+        arcade.draw_rect_filled(
+            arcade.rect.XYWH(self.window.width // 2, self.window.height - 25, self.window.width, 50),
+            arcade.color.BLACK)
+        arcade.draw_rect_outline(
+            arcade.rect.XYWH(self.window.width // 2, self.window.height - 25, self.window.width + 2, 50),
+            arcade.color.GOLDEN_BROWN, 2)
+        for i in range(self.game.player.lives + 1):
+            live = arcade.Sprite(self.game.pl_lives)  # when adding lives do a max of 5 lives!
+            if i + 1 == 1:
+                live.left = (i + 1) * 16
+                live.center_y = self.window.height - 25
+            else:
+                live.left = (i + 1) * 16 - (i + 1) * 8
+                live.center_y = self.window.height - 25
+            arcade.draw_sprite(live)
+        arcade.Text(f"Score: {self.game.score}", self.window.width - 10, self.window.height - 25, arcade.color.WHITE,
+                    anchor_x="right", anchor_y='center').draw()
 
-        arcade.draw_text("PAUSED", self.window.center_x, self.window.center_y + 50,
-                         arcade.color.WHITE, font_size=50, anchor_x="center")
-
-        # Show tip to return or reset
-        arcade.draw_text("Press Esc. to return",
-                         self.window.center_x,
-                         self.window.center_y,
-                         arcade.color.WHITE,
-                         font_size=20,
-                         anchor_x="center")
-        arcade.draw_text("Enter - Main Menu",
-                         self.window.center_x,
-                         self.window.center_y - 30,
-                         arcade.color.WHITE,
-                         font_size=20,
-                         anchor_x="center")
+        arcade.draw_rect_filled(
+            arcade.rect.XYWH(self.window.width // 2, self.window.height // 2, self.window.width, self.window.height),
+            [0, 0, 0, 128])
+        arcade.Text("PAUSED", self.window.center_x, self.window.center_y + 50,
+                    arcade.color.WHITE, font_size=50, anchor_x="center").draw()
+        arcade.Text("Esc - Return to game",
+                    self.window.center_x,
+                    self.window.center_y,
+                    arcade.color.WHITE,
+                    font_size=20,
+                    anchor_x="center").draw()
+        arcade.Text("Enter - Main menu",
+                    self.window.center_x,
+                    self.window.center_y - 30,
+                    arcade.color.WHITE,
+                    font_size=20,
+                    anchor_x="center").draw()
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ESCAPE:
@@ -345,5 +379,3 @@ class PauseView(arcade.View):
 
     def on_key_release(self, key, modifiers):
         self.game.on_key_release(key, modifiers)
-
-
