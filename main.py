@@ -54,7 +54,6 @@ class Main_menu(arcade.View):
         self.bg_flag = False
         self.resize_flag = False
         self.menu_center_flag = False
-        self.menu_exists = False
         self.reset_flag = False
 
         # gui
@@ -312,7 +311,6 @@ class Main_menu(arcade.View):
     def on_hide_view(self) -> None:
         self.reset_flag = True
         self.ui.disable()
-        self.menu_exists = True
         if self.bg_flag:
             arcade.stop_sound(self.curr_audio)
             self.bg_flag = False
@@ -354,14 +352,6 @@ class Main_menu(arcade.View):
         else:
             self.resize_flag = False
             self.resize_count = 0
-
-        if self.menu_exists:
-            self.menu_buttons.center_on_screen()
-            self.settings_buttons.center_on_screen()
-            self.video_buttons.center_on_screen()
-            self.audio_buttons.center_on_screen()
-            self.assets_buttons.center_on_screen()
-            self.menu_exists = False
 
         self.ui.draw()
 
