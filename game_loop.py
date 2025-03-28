@@ -183,8 +183,7 @@ class GameLoop(arcade.View):
         angle = math.atan2(-y_angle, x_angle)
         prev_angle = self.player.sprite.angle
         self.player.sprite.angle = math.degrees(angle) + 90
-        angle = self.player.sprite.angle
-        # print(angle)  # dont mind this, planning to finally do that rotation thingy and i know what's below is something real bad lol
+        # print(angle)  # dont mind this, planning to finally do that rotation window resizing thingy and i know what's below is something real bad lol
         # if 0 <= angle < 45:
         #     print('1')
         # elif 45 <= angle < 90:
@@ -202,7 +201,7 @@ class GameLoop(arcade.View):
         # elif -45 <= angle < 0:
         #     print('8')
 
-        rotate_around_point(self.pl_bul_hitbox, self.player.sprite.position, angle - prev_angle)
+        rotate_around_point(self.pl_bul_hitbox, self.player.sprite.position, self.player.sprite.angle - prev_angle)
 
     def create_bullets(self):
         arcade.play_sound(self.player.bullet_audio, volume=float(conf.set_settings('Settings', 'sfx_volume')))
