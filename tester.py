@@ -18,6 +18,10 @@ running = True
 rays = []
 walls = []
 particles = []
+left = False
+right = False
+up = False
+down = False
 
 
 class Ray:
@@ -120,13 +124,24 @@ def generateWalls(flag=True):
         walls.append(Wall((start_x, start_y), (end_x, end_y)))
 
 
-def changeRays(st, ed):
-    global start,end
-    start += st
-    end += ed
-    rays.clear()
-    for i in range(start, end, int(90 / NUM_RAYS)):
-        rays.append(Ray(mx, my, math.radians(i)))
+def changeRays():
+    global start, end
+    if left or right or up or down:
+        if left:
+            start += 1
+            end += 1
+        if right:
+            start -= 1
+            end -= 1
+        if up:
+            start -= 1
+            end += 1
+        if down:
+            start += 1
+            end -= 1
+        rays.clear()
+        for i in range(start, end, int(90 / NUM_RAYS)):
+            rays.append(Ray(mx, my, math.radians(i)))
 
 
 class GameView(arcade.View):
@@ -148,7 +163,11 @@ class GameView(arcade.View):
 
         drawRays([ray for ray in rays], [wall for wall in walls])
 
+    def on_update(self, delta_time: float) -> bool | None:
+        changeRays()
+
     def on_key_press(self, key, key_modifiers):
+        global left, right, up, down
         if key == arcade.key.SPACE:
             generateWalls(self.flag)
         if key == arcade.key.H:
@@ -158,13 +177,24 @@ class GameView(arcade.View):
             global SOLID_RAYS
             SOLID_RAYS = not SOLID_RAYS
         if key == arcade.key.LEFT:
-            changeRays(1, 1)
+            left = True
         if key == arcade.key.RIGHT:
-            changeRays(-1, -1)
+            right = True
         if key == arcade.key.UP:
-            changeRays(-1, 1)
+            up = True
         if key == arcade.key.DOWN:
-            changeRays(1, -1)
+            down = True
+
+    def on_key_release(self, key: int, _modifiers: int) -> bool | None:
+        global left, right, up, down
+        if key == arcade.key.LEFT:
+            left = False
+        if key == arcade.key.RIGHT:
+            right = False
+        if key == arcade.key.UP:
+            up = False
+        if key == arcade.key.DOWN:
+            down = False
 
     def on_mouse_motion(self, x, y, delta_x, delta_y):
         global mx, my
