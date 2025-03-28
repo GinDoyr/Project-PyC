@@ -1,6 +1,7 @@
 import arcade
 import math
 import random
+import numpy as np
 
 # -----Options-----
 WINDOW_SIZE = (1200, 800)  # Width x Height in pixels
@@ -17,11 +18,12 @@ lastClosestPoint = (0, 0)
 running = True
 rays = []
 walls = []
-particles = []
+dots = []
 left = False
 right = False
 up = False
 down = False
+lidar_flag = False
 
 
 class Ray:
@@ -33,7 +35,7 @@ class Ray:
     def update(self, mx, my):
         self.x = mx
         self.y = my
-    
+
     def checkCollision(self, wall):
         x1 = wall.start_pos[0]
         y1 = wall.start_pos[1]
@@ -46,7 +48,7 @@ class Ray:
         y4 = self.y + self.dir[1]
 
         # Using line-line intersection formula to get intersection point of ray and wall
-        # Where (x1, y1), (x2, y2) are the ray pos and (x3, y3), (x4, y4) are the wall pos
+        # Where (x1, y1), (x2, y2) are the ray pos and (x3, y3), (x4, y4) are the wall pos  (ed.: other way, no?)
         denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
         numerator = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)
         if denominator == 0:
@@ -86,6 +88,10 @@ for i in range(start, end, int(90 / NUM_RAYS)):
 
 def drawRays(rays, walls):
     global lastClosestPoint
+    if lidar_flag:
+        chosen = np.random.randint(0, len(rays)+1, size=10)
+        ind = 0
+    lastClosestPoint = None
     for ray in rays:
         closest = 100000
         closestPoint = None
@@ -100,13 +106,43 @@ def drawRays(rays, walls):
                 if (distance < closest):
                     closest = distance
                     closestPoint = intersectPoint
-
         if closestPoint is not None:
             arcade.draw_line(ray.x, ray.y, closestPoint[0], closestPoint[1], arcade.color.WHITE)
+            if lidar_flag:
+                if ind in chosen and lastClosestPoint is not None:
+                    if closestPoint[0] < lastClosestPoint[0]:
+                        if round(closestPoint[0]) == round(lastClosestPoint[0]):  # goddamit FIX THIS SOMEHOW
+                            x = np.random.randint(closestPoint[0] - 1, lastClosestPoint[0])
+                        else:
+                            x = np.random.randint(closestPoint[0], lastClosestPoint[0])
+                    else:
+                        if round(closestPoint[0]) == round(lastClosestPoint[0]):
+                            x = np.random.randint(lastClosestPoint[0] - 1, closestPoint[0])
+                        else:
+                            x = np.random.randint(lastClosestPoint[0], closestPoint[0])
+                    if closestPoint[1] < lastClosestPoint[1]:
+                        if round(closestPoint[1]) == round(lastClosestPoint[1]):
+                            y = np.random.randint(closestPoint[1] - 1, lastClosestPoint[1])
+                        else:
+                            y = np.random.randint(closestPoint[1], lastClosestPoint[1])
+                    else:
+                        if round(closestPoint[1]) == round(lastClosestPoint[1]):
+                            y = np.random.randint(lastClosestPoint[1]-1, closestPoint[1])
+                        else:
+                            y = np.random.randint(lastClosestPoint[1], closestPoint[1])
+                    dots.append((x, y, arcade.color.BLUE, 3.0))
+                ind += 1
+            lastClosestPoint = closestPoint
             if SOLID_RAYS:
                 arcade.draw_polygon_filled([(mx, my), closestPoint, lastClosestPoint], arcade.color.WHITE)
                 lastClosestPoint = closestPoint
 
+
+def drawDots():
+    for dot in dots:
+        arcade.draw_point(*dot)
+        if len(dots) > 300:
+            dots.remove(dots[0])
 
 def generateWalls(flag=True):
     walls.clear()
@@ -158,16 +194,13 @@ class GameView(arcade.View):
         for wall in walls:
             wall.draw()
 
-        for particle in particles:
-            particle.draw()
-
         drawRays([ray for ray in rays], [wall for wall in walls])
+        drawDots()
 
     def on_update(self, delta_time: float) -> bool | None:
         changeRays()
-
     def on_key_press(self, key, key_modifiers):
-        global left, right, up, down
+        global left, right, up, down, lidar_flag
         if key == arcade.key.SPACE:
             generateWalls(self.flag)
         if key == arcade.key.H:
@@ -184,9 +217,11 @@ class GameView(arcade.View):
             up = True
         if key == arcade.key.DOWN:
             down = True
+        if key == arcade.key.F:
+            lidar_flag = True
 
     def on_key_release(self, key: int, _modifiers: int) -> bool | None:
-        global left, right, up, down
+        global left, right, up, down, lidar_flag
         if key == arcade.key.LEFT:
             left = False
         if key == arcade.key.RIGHT:
@@ -195,6 +230,8 @@ class GameView(arcade.View):
             up = False
         if key == arcade.key.DOWN:
             down = False
+        if key == arcade.key.F:
+            lidar_flag = False
 
     def on_mouse_motion(self, x, y, delta_x, delta_y):
         global mx, my
