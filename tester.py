@@ -4,13 +4,12 @@ import random
 import numpy as np
 
 # -----Options-----
-WINDOW_SIZE = (1200, 800)  # Width x Height in pixels
 NUM_RAYS = 90  # Must be between 1 and 360 (90 testing)
 SOLID_RAYS = False  # Can be somewhat glitchy. For best results, set NUM_RAYS to 360
 NUM_WALLS = 5  # The amount of randomly generated walls
 # ------------------
 
-window = arcade.Window(1200, 800, 'raytest')
+window = arcade.Window(1200, 600, 'raytest')
 window.center_window()
 
 mx, my = 600, 400
@@ -37,20 +36,14 @@ class Ray:
         self.y = my
 
     def checkCollision(self, wall):
-        x1 = wall.start_pos[0]
-        y1 = wall.start_pos[1]
-        x2 = wall.end_pos[0]
-        y2 = wall.end_pos[1]
-
-        x3 = self.x
-        y3 = self.y
-        x4 = self.x + self.dir[0]
-        y4 = self.y + self.dir[1]
+        x1, y1 = wall.start_pos
+        x2, y2 = wall.end_pos
+        x3, y3 = self.x, self.y
 
         # Using line-line intersection formula to get intersection point of ray and wall
         # Where (x1, y1), (x2, y2) are the ray pos and (x3, y3), (x4, y4) are the wall pos  (ed.: other way, no?)
-        denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-        numerator = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)
+        denominator = (x1 - x2) * (-self.dir[1]) - (y1 - y2) * (-self.dir[0])  #-self.dir[n] bcs x3 - x4 = self.x - (self.x + self.dir[n])
+        numerator = (x1 - x3) * (-self.dir[1]) - (y1 - y3) * (-self.dir[0])
         if denominator == 0:
             return None
 
@@ -91,7 +84,6 @@ def drawRays(rays, walls):
     if lidar_flag:
         chosen = np.random.randint(0, len(rays)+1, size=10)
         ind = 0
-    lastClosestPoint = None
     for ray in rays:
         closest = 100000
         closestPoint = None
@@ -110,29 +102,50 @@ def drawRays(rays, walls):
             arcade.draw_line(ray.x, ray.y, closestPoint[0], closestPoint[1], arcade.color.WHITE)
             if lidar_flag:
                 if ind in chosen and lastClosestPoint is not None:
-                    if closestPoint[0] < lastClosestPoint[0]:
-                        if round(closestPoint[0]) == round(lastClosestPoint[0]):  # goddamit FIX THIS SOMEHOW
-                            x = np.random.randint(closestPoint[0] - 1, lastClosestPoint[0])
+                    # if closestPoint[0] < lastClosestPoint[0]:
+                    #     print('x1', closestPoint[0], lastClosestPoint[0], round(closestPoint[0]), round(lastClosestPoint[0]))
+                    #     if round(closestPoint[0]) == round(lastClosestPoint[0]):  # goddamit FIX THIS SOMEHOW
+                    #         x = np.random.randint(closestPoint[0] - 1, lastClosestPoint[0])
+                    #     else:
+                    #         x = np.random.randint(round(closestPoint[0]), round(lastClosestPoint[0]))
+                    # else:
+                    #     print('x2', closestPoint[0], lastClosestPoint[0], round(closestPoint[0]), round(lastClosestPoint[0]))
+                    #     if round(closestPoint[0]) == round(lastClosestPoint[0]):
+                    #         x = np.random.randint(lastClosestPoint[0] - 1, closestPoint[0])
+                    #     else:
+                    #         x = np.random.randint(round(lastClosestPoint[0]), round(closestPoint[0]))
+                    # if closestPoint[1] < lastClosestPoint[1]:
+                    #     print("y1", closestPoint[1], lastClosestPoint[1], round(closestPoint[1]), round(lastClosestPoint[1]))
+                    #     if round(closestPoint[1]) == round(lastClosestPoint[1]):
+                    #         y = np.random.randint(closestPoint[1] - 1, lastClosestPoint[1])
+                    #     else:
+                    #         y = np.random.randint(round(closestPoint[1]), round(lastClosestPoint[1]))
+                    # else:
+                    #     print("y2", closestPoint[1], lastClosestPoint[1], round(closestPoint[1]), round(lastClosestPoint[1]))
+                    #     if round(closestPoint[1]) == round(lastClosestPoint[1]):
+                    #         y = np.random.randint(lastClosestPoint[1]-1, closestPoint[1])
+                    #     else:
+                    #         y = np.random.randint(round(lastClosestPoint[1]), round(closestPoint[1]))
+                    try:
+                        if closestPoint[0] == lastClosestPoint[0] == window.width:
+                            x = window.width - 1
+                        elif closestPoint[0] == lastClosestPoint[0] == 0.0:
+                            x = 1.0
                         else:
-                            x = np.random.randint(closestPoint[0], lastClosestPoint[0])
-                    else:
-                        if round(closestPoint[0]) == round(lastClosestPoint[0]):
-                            x = np.random.randint(lastClosestPoint[0] - 1, closestPoint[0])
+                            x = np.random.randint(min(closestPoint[0], lastClosestPoint[0]),
+                                                  max(closestPoint[0], lastClosestPoint[0]))
+                        if closestPoint[1] == lastClosestPoint[1] == window.height:
+                            y = window.height - 1
+                        elif closestPoint[1] == lastClosestPoint[1] == 0:
+                            y = 1.0
                         else:
-                            x = np.random.randint(lastClosestPoint[0], closestPoint[0])
-                    if closestPoint[1] < lastClosestPoint[1]:
-                        if round(closestPoint[1]) == round(lastClosestPoint[1]):
-                            y = np.random.randint(closestPoint[1] - 1, lastClosestPoint[1])
-                        else:
-                            y = np.random.randint(closestPoint[1], lastClosestPoint[1])
-                    else:
-                        if round(closestPoint[1]) == round(lastClosestPoint[1]):
-                            y = np.random.randint(lastClosestPoint[1]-1, closestPoint[1])
-                        else:
-                            y = np.random.randint(lastClosestPoint[1], closestPoint[1])
-                    dots.append((x, y, arcade.color.BLUE, 3.0))
+                            y = np.random.randint(min(closestPoint[1], lastClosestPoint[1]),
+                                                  max(closestPoint[1], lastClosestPoint[1]))
+                        dots.append((x, y, arcade.color.RED, 3.0))
+                    except Exception as e:
+                        print(f'failed to create! {closestPoint}, {lastClosestPoint}\n{e}')
                 ind += 1
-            lastClosestPoint = closestPoint
+                lastClosestPoint = closestPoint
             if SOLID_RAYS:
                 arcade.draw_polygon_filled([(mx, my), closestPoint, lastClosestPoint], arcade.color.WHITE)
                 lastClosestPoint = closestPoint
