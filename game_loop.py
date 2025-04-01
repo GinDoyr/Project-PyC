@@ -10,6 +10,7 @@ import file_mngr.zip_mngr as zipmn
 import player
 import enemies
 import math
+import numpy as np
 
 
 # look into this on how to do animations
@@ -31,6 +32,34 @@ def rotate_around_point(sprite, point, degrees):
     sprite.position = rotate_point(
         sprite.center_x, sprite.center_y,
         point[0], point[1], degrees)
+
+
+def random_enemy_xy(width, height, pl_pos, wall):
+    '''
+    :param width: area width
+    :param height: area height
+    :param pl_pos: player position (x, y)
+    :param wall: wall from gameview
+    :return: random x and y
+    '''
+    one = np.random.randint(0, 2)
+    two = np.random.randint(0, 2)
+    if (one or not (not one and pl_pos[0]-300 > wall.width)) and pl_pos[0]+300 < width - wall.width:
+        x = np.random.randint(pl_pos[0]+300, width - wall.width)
+    else:
+        x = np.random.randint(wall.width, pl_pos[0]-300)
+    if (two or not (not two and pl_pos[1]-300 > wall.height)) and pl_pos[1]+300 < height - wall.height:
+        y = np.random.randint(pl_pos[1]+300, height - wall.height)
+    else:
+        y = np.random.randint(wall.height, pl_pos[1]-300)
+    try:
+        return x, y
+    except Exception as e:
+        conf.logmn.log_warning(f'failed to create random x, y for enemy! {e}')
+
+
+def point_enemy_to_player(pl_x, pl_y, en_x, en_y):
+    return -math.atan2(pl_y - en_y, pl_x - en_x) + 3.14 / 2
 
 
 class GameLoop(arcade.View):
@@ -71,11 +100,16 @@ class GameLoop(arcade.View):
         # PLEASE MAKE SURE SPRITE LOOKS UP! mb make a confirm window to adjust the import sprite angle?
         if conf.set_settings('Settings',
                              'resourcepack') != 'None':  # ok so i've made some function but still looks like a mess. or not. idk, but it works :D
-            player_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'player_sprite', scale=0.2)
+            player_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'player_sprite')
             pl_bullet_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'player_bullet').texture
             self.pl_crsh = zipmn.try_loading_from_resourcepack('Sprites', 'player_crosshair')
             self.pl_lives = zipmn.try_loading_from_resourcepack('Sprites', 'other_lives').texture
             pl_bullet_audio = zipmn.try_loading_from_resourcepack('Audio', 'player_bullet')
+            banz_sprite = zipmn.try_loading_from_resourcepack('Sprites', 'enemies_enemy1').texture
+            banz_death = zipmn.try_loading_from_resourcepack('Audio', "enemies_enemy1 death")
+            banz_rush = zipmn.try_loading_from_resourcepack('Audio', 'enemies_enemy1 rush')
+            banz_expl = zipmn.try_loading_from_resourcepack('Audio', 'enemies_enemy1 explosion')
+            #banz_explspr = zipmn.try_loading_from_resourcepack('Sprites', 'enemies_enemy1 explosion')
         else:
             player_sprite = arcade.Sprite(conf.set_settings('Sprites', 'player_sprite'))
             pl_bullet_sprite = arcade.Sprite(conf.set_settings('Sprites',
@@ -83,6 +117,12 @@ class GameLoop(arcade.View):
             self.pl_crsh = arcade.Sprite(conf.set_settings("Sprites", "player_crosshair"))
             self.pl_lives = arcade.Sprite(conf.set_settings('Sprites', 'other_lives')).texture
             pl_bullet_audio = arcade.load_sound(conf.set_settings("Audio", "player_bullet"))
+            banz_sprite = arcade.Sprite(conf.set_settings('Sprites', 'enemies_enemy1')).texture
+            banz_death = arcade.load_sound(conf.set_settings('Audio', "enemies_enemy1 death"))
+            banz_rush = arcade.load_sound(conf.set_settings('Audio', 'enemies_enemy1 rush'))
+            banz_expl = arcade.load_sound(conf.set_settings('Audio', 'enemies_enemy1 explosion'))
+
+        # player
         pl_bullet_sprite.width, pl_bullet_sprite.height = 10, 28
         player_sprite.width, player_sprite.height = 64, 64
         self.pl_bullet_speed = 10
@@ -95,6 +135,9 @@ class GameLoop(arcade.View):
             "assets/sprites/misc/very_important_1x1.png")  # this is the only thing i've come up for the bullet start point. hoping to smh change it later
         self.pl_bul_hitbox.bottom = self.player.sprite.top
         self.pl_bul_hitbox.center_x = self.player.sprite.center_x
+
+        # banzai
+        self.banzai = enemies.Banzai(banz_sprite, banz_rush, banz_expl, banz_death)
 
         # background attempt
         self.bg_list = arcade.SpriteList()
@@ -131,6 +174,7 @@ class GameLoop(arcade.View):
 
         # sprite lists
         self.sprite_list = arcade.SpriteList()
+        self.banzai_list = arcade.SpriteList()  # i really didnt want to go this way but whatever, for now
         self.entities_list = arcade.SpriteList()
         self.crosshair = arcade.SpriteList()
         self.crosshair.append(self.pl_crsh)
@@ -213,12 +257,44 @@ class GameLoop(arcade.View):
         bullet.position = self.pl_bul_hitbox.position
         self.entities_list.append(bullet)
 
+    def create_enemy(self, enemy_type=1):
+        if enemy_type == 1:
+            enemy = arcade.Sprite(self.banzai.sprite)
+            enemy
+            enemy.scale = 1.5
+            enemy.center_x, enemy.center_y = random_enemy_xy(self.area_x, self.area_y, self.player.sprite.position, self.wall_sprite)
+            self.banzai_list.append(enemy)
+        elif enemy_type == 2:
+            pass
+        elif enemy_type == 3:
+            pass
+
     def update_bullets(self):
         self.entities_list.update()
         for entity in self.entities_list:
             if entity.top > self.area_y - self.wall_sprite.height or entity.bottom < self.wall_sprite.height or entity.left < self.wall_sprite.width or entity.right > self.area_x - self.wall_sprite.width:
                 # ... this is just awful. i really, REALLY need to make this better somehow. later, as is everything :P
                 entity.remove_from_sprite_lists()
+
+    def update_enemy_angle(self):
+        for banz in self.banzai_list:  # made for right facing banzais, just del the -90
+            angle = -math.atan2(self.player.sprite.center_y - banz.center_y, self.player.sprite.center_x - banz.center_x) + 3.14 / 2
+            banz.angle = math.degrees(angle)-90
+
+    def update_enemy_speed(self):
+        for banz in self.banzai_list:
+            banz.center_x += banz.change_x
+            banz.center_y += banz.change_y
+            x_diff = self.player.sprite.center_x - banz.center_x
+            y_diff = self.player.sprite.center_y - banz.center_y
+            angle = math.atan2(y_diff, x_diff)
+            if x_diff <= self.banzai.rage_area or y_diff <= self.banzai.rage_area:
+                banz.change_x *= 2
+                banz.change_y *= 2
+                ! BRO TH ARE THESE ROCKETS LOL definitely fix this but keep in mind
+            else:
+                banz.change_x = math.cos(angle) * self.banzai.speed
+                banz.change_y = math.sin(angle) * self.banzai.speed
 
     def on_show_view(self):
         self.window.set_mouse_visible(False)
@@ -235,6 +311,7 @@ class GameLoop(arcade.View):
         self.camera_sprites.use()
         self.bg_list.draw()
         self.sprite_list.draw()
+        self.banzai_list.draw()
         self.wall_sprlist.draw()
         self.entities_list.draw()
         self.camera_gui.use()  # for later gui use
@@ -271,6 +348,8 @@ class GameLoop(arcade.View):
             self.create_bullets()
             self.recharge_flag = False
 
+        self.update_enemy_angle()
+        self.update_enemy_speed()
         self.update_bullets()
         self.update_crosshair(self.mouse_x, self.mouse_y)
         self.update_player_angle(self.pl_crsh.center_x, self.pl_crsh.center_y)
@@ -289,6 +368,8 @@ class GameLoop(arcade.View):
             self.up_pressed = True
         if key == arcade.key.S:
             self.down_pressed = True
+        if key == arcade.key.U:
+            self.create_enemy()
         if key == arcade.key.SPACE:
             self.shoot_flag = True
 

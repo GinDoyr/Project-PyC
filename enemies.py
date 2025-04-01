@@ -1,29 +1,25 @@
-import arcade
-
-
-class Enemy(arcade.Sprite):
-    def __init__(self, sprite, scale_x, scale_y):
-        super().__init__(sprite, scale=(scale_x, scale_y))
-
-
-class Banzai(Enemy):
-    def __init__(self, sprite, scale_x, scale_y, sound_charge, explosion, death_sound, health):
+class Banzai:  # ... what even is the point of this file??? i mean yeah classes but they dont eat up that much space. maybe do some more stuff here, like loading the resources here instead of in game loop?
+    def __init__(self, sprite, sound_charge, explosion_snd, death_sound):
+        self.sprite = sprite
         self.sound_charge = sound_charge
-        self.explosion = explosion
+        # self.explosion_spr = explosion_spr  # add later
+        self.explosion_snd = explosion_snd
         self.death_sound = death_sound
-        self.health = health
-        super().__init__(sprite, scale_x, scale_y)
+        self.health = 8
+        self.speed = 5
+        self.rage_area = 200
 
-class Shooter(Enemy):
-    def __init__(self, sprite, scale_x, scale_y, sound, death_sound, health):
+
+class Shooter:
+    def __init__(self, sprite, sound, death_sound):
+        self.sprite = sprite
         self.sound = sound
         self.death_sound = death_sound
-        self.health = health
-        super().__init__(sprite, scale_x, scale_y)
+        self.health = 20
 
-class Boss(Enemy):
-    def __init__(self, sprite, scale_x, scale_y, sound, death_sound, health):
+
+class Boss:
+    def __init__(self, sprite, sound, death_sound):
         self.sound = sound
         self.death_sound = death_sound
-        self.health = health
-        super().__init__(sprite, scale_x, scale_y)
+        self.health = 100

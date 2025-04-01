@@ -130,6 +130,7 @@ def drawDots():
         if len(dots) > 300:
             dots.remove(dots[0])
 
+
 def generateWalls(flag=True):
     walls.clear()
     if flag:
@@ -185,6 +186,7 @@ class GameView(arcade.View):
 
     def on_update(self, delta_time: float) -> bool | None:
         changeRays()
+
     def on_key_press(self, key, key_modifiers):
         global left, right, up, down, lidar_flag
         if key == arcade.key.SPACE:
