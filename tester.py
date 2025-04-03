@@ -22,6 +22,8 @@ left = False
 right = False
 up = False
 down = False
+up1 = False
+down1 = False
 lidar_flag = False
 
 
@@ -148,20 +150,28 @@ def generateWalls(flag=True):
 
 
 def changeRays():
-    global start, end
-    if left or right or up or down:
+    global start, end, up1, down1
+    if left or right or up or down or up1 or down1:
         if left:
             start += 1
             end += 1
         if right:
             start -= 1
             end -= 1
-        if up:
+        if up and (end - start != 360):
             start -= 1
             end += 1
         if down:
             start += 1
             end -= 1
+        if up1 and (end - start != 360):
+            start -= 1
+            end += 1
+            up1 = False
+        if down1:
+            start += 1
+            end -= 1
+            down1 = False
         rays.clear()
         for i in range(start, end, int(90 / NUM_RAYS)):
             rays.append(Ray(mx, my, math.radians(i)))
@@ -184,7 +194,7 @@ class GameView(arcade.View):
         drawRays([ray for ray in rays], [wall for wall in walls])
         drawDots()
 
-    def on_update(self, delta_time: float) -> bool | None:
+    def on_update(self, delta_time: float):
         changeRays()
 
     def on_key_press(self, key, key_modifiers):
@@ -226,6 +236,30 @@ class GameView(arcade.View):
         mx, my = x, y
         for ray in rays:
             ray.update(mx, my)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        global left, right, up, down
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            left = True
+        if button == arcade.MOUSE_BUTTON_RIGHT:
+            right = True
+        if button == arcade.MOUSE_BUTTON_MIDDLE:
+            up = False
+            down = False
+
+    def on_mouse_scroll(self, x: int, y: int, scroll_x: int, scroll_y: int):
+        global up1, down1
+        if scroll_y > 0:
+            up1 = True
+        else:
+            down1 = True
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        global left, right
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            left = False
+        if button == arcade.MOUSE_BUTTON_RIGHT:
+            right = False
 
 
 def main():

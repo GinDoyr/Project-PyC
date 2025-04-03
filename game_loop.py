@@ -291,7 +291,6 @@ class GameLoop(arcade.View):
             if x_diff <= self.banzai.rage_area or y_diff <= self.banzai.rage_area:
                 banz.change_x *= 2
                 banz.change_y *= 2
-                ! BRO TH ARE THESE ROCKETS LOL definitely fix this but keep in mind
             else:
                 banz.change_x = math.cos(angle) * self.banzai.speed
                 banz.change_y = math.sin(angle) * self.banzai.speed
