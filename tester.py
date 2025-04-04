@@ -6,6 +6,7 @@ import numpy as np
 NUM_RAYS = 90  # Must be between 1 and 360 (90 testing)
 SOLID_RAYS = False  # Can be somewhat glitchy. For best results, set NUM_RAYS to 360
 NUM_WALLS = 5  # The amount of randomly generated walls
+MAX_DOTS = 1000  # heey finally one of my own :D max "lidar" generated dots
 # ------------------
 
 window = arcade.Window(1200, 600, 'raytest')
@@ -13,7 +14,6 @@ window.center_window()
 
 mx, my = 600, 400
 lastClosestPoint = (0, 0)
-running = True
 rays = []
 walls = []
 dots = []
@@ -238,13 +238,12 @@ def drawRays(rays, walls):
             if wall.visible_ranges:
                 point = wall.get_random_point()
                 if point:
-                    dots.append((*point, arcade.color.RED, 4))
+                    dots.append(point)
 
 def drawDots():
-    for dot in dots:
-        arcade.draw_point(*dot)
-        if len(dots) > 300:
-            dots.remove(dots[0])
+    arcade.draw_points(dots, arcade.color.RED, 4)
+    if len(dots) > MAX_DOTS:
+        dots.remove(dots[0])
 
 
 def generateWalls(flag=True):
