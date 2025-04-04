@@ -7,6 +7,7 @@ NUM_RAYS = 90  # Must be between 1 and 360 (90 testing)
 SOLID_RAYS = False  # Can be somewhat glitchy. For best results, set NUM_RAYS to 360
 NUM_WALLS = 5  # The amount of randomly generated walls
 MAX_DOTS = 1000  # heey finally one of my own :D max "lidar" generated dots
+MAX_RAY_LEN = 400
 # ------------------
 
 window = arcade.Window(1200, 600, 'raytest')
@@ -25,14 +26,17 @@ up1 = False
 down1 = False
 lidar_flag = False
 ray_flag = False
+bvh_root = None
 
 
 class Ray:
     def __init__(self, x, y, angle):
         self.x = x
         self.y = y
-        self.dir = (math.cos(angle), math.sin(angle))
         self.angle = angle  # Store angle for sorting
+        self.end_x = self.x + MAX_RAY_LEN*math.cos(self.angle)
+        self.end_y = self.y + MAX_RAY_LEN*math.sin(self.angle)
+        self.dir = (math.cos(angle), math.sin(angle))
         self.last_hit_wall = None  # Track last wall this ray hit
 
     def update(self, mx, my):
@@ -160,12 +164,160 @@ class Wall:
         # Draw visible ranges in green
         for start, end in self.visible_ranges:
             arcade.draw_line(*start, *end, arcade.color.GREEN, 2)
-
         # Draw extreme points
         if self.leftmost_hit:
-            arcade.draw_point(*self.leftmost_hit, arcade.color.RED, 10)
+            arcade.draw_point(*self.leftmost_hit, arcade.color.BLUE, 10)
         if self.rightmost_hit:
             arcade.draw_point(*self.rightmost_hit, arcade.color.PURPLE, 10)
+
+class BVHNode:  # я чутка позаимствовал, извините Е.Д. :)
+    def __init__(self, walls):
+        self.aabb = self._compute_node_aabb(walls)
+        self.walls = walls
+        self.left = None
+        self.right = None
+        self.wall_normals = [self._compute_wall_normal(wall) for wall in walls]
+        # Добавляем случайный цвет для визуализации
+        self.color = (
+            np.random.randint(50, 200),
+            np.random.randint(50, 200),
+            np.random.randint(50, 200),
+            80  # Полупрозрачный
+        )
+
+    def _compute_node_aabb(self, walls):
+        """Приватный метод: вычисляет AABB только для этого узла"""
+        min_x = min(min(wall.start_pos[0], wall.end_pos[0]) for wall in walls)
+        max_x = max(max(wall.start_pos[0], wall.end_pos[0]) for wall in walls)
+        min_y = min(min(wall.start_pos[1], wall.end_pos[1]) for wall in walls)
+        max_y = max(max(wall.start_pos[1], wall.end_pos[1]) for wall in walls)
+        return (min_x, min_y, max_x, max_y)
+
+    def _compute_wall_normal(self, wall):
+        """Приватный метод: вычисляет нормаль конкретной стены"""
+        (x1, y1), (x2, y2) = wall.start_pos, wall.end_pos
+        dx, dy = x2 - x1, y2 - y1
+        length = math.hypot(dx, dy)
+        normal = (-dy/length, dx/length)
+        # Корректировка направления нормали
+        mid_x = (x1 + x2) / 2
+        mid_y = (y1 + y2) / 2
+        if (mid_x * normal[0] + mid_y * normal[1]) < 0:
+            normal = (-normal[0], -normal[1])
+        return normal
+
+
+def build_bvh(walls, depth=0, max_depth=20):
+    """Рекурсивно строит BVH-дерево с автоматическим определением осей разделения."""
+
+    # Базовый случай - создаём лист
+    if len(walls) <= 4 or depth >= max_depth:
+        return BVHNode(walls)
+
+    # 1. Вычисляем общий AABB для всех стен
+    all_min_x = min(min(wall.start_pos[0], wall.end_pos[0]) for wall in walls)
+    all_max_x = max(max(wall.start_pos[0], wall.end_pos[0]) for wall in walls)
+    all_min_y = min(min(wall.start_pos[1], wall.end_pos[1]) for wall in walls)
+    all_max_y = max(max(wall.start_pos[1], wall.end_pos[1]) for wall in walls)
+
+    # 2. Определяем лучшую ось для разделения (x или y)
+    dx = all_max_x - all_min_x
+    dy = all_max_y - all_min_y
+    axis = 0 if dx > dy else 1  # 0 - ось X, 1 - ось Y
+
+    # 3. Сортируем стены по средней точке на выбранной оси
+    walls_sorted = sorted(walls, key=lambda wall: (
+            (wall.start_pos[axis] + wall.end_pos[axis]) / 2))  # Средняя точка стены
+
+    # 4. Разделяем стены примерно пополам
+    mid = len(walls_sorted) // 2
+    left_walls = walls_sorted[:mid]
+    right_walls = walls_sorted[mid:]
+
+    # 5. Рекурсивно строим левое и правое поддеревья
+    node = BVHNode(walls)  # Создаём узел (но пока без детей)
+    node.left = build_bvh(left_walls, depth + 1, max_depth)
+    node.right = build_bvh(right_walls, depth + 1, max_depth)
+
+    return node
+
+
+def draw_bvh(node):
+    if node is None:
+        return
+    min_x, min_y, max_x, max_y = map(int, node.aabb)
+    arcade.draw_rect_outline(arcade.rect.XYWH(min_x, min_y, max_x - min_x, max_y - min_y), node.color, 2)
+    # Рекурсивно рисуем левую и правую ветви
+    draw_bvh(node.left)
+    draw_bvh(node.right)
+
+
+def intersect_bvh_with_counting(node, ray, return_wall=False):
+    """Поиск с подсчётом и возвратом стены"""
+    if node is None:
+        return (None, float('inf'), None) if return_wall else (None, float('inf'))
+
+    if not aabb_intersects_ray(node.aabb, ray):
+        return (None, float('inf'), None) if return_wall else (None, float('inf'))
+
+    if node.left is None and node.right is None:
+        closest_intersection = None
+        min_distance = float('inf')
+        hit_wall = None
+
+        for i, wall in enumerate(node.walls):
+            intersection = ray.checkCollision(wall)
+            if intersection:
+                dist = math.hypot(intersection[0] - ray.x, intersection[1] - ray.y)
+                if dist < min_distance:
+                    min_distance = dist
+                    closest_intersection = intersection
+                    hit_wall = wall
+
+        if return_wall:
+            return closest_intersection, min_distance, hit_wall
+        return closest_intersection, min_distance
+
+    left_result = intersect_bvh_with_counting(node.left, ray, return_wall)
+    right_result = intersect_bvh_with_counting(node.right, ray, return_wall)
+
+    if return_wall:
+        left_intersection, left_dist, left_wall = left_result
+        right_intersection, right_dist, right_wall = right_result
+        if left_dist < right_dist:
+            return left_intersection, left_dist, left_wall
+        return right_intersection, right_dist, right_wall
+    else:
+        left_intersection, left_dist = left_result
+        right_intersection, right_dist = right_result
+        if left_dist < right_dist:
+            return left_intersection, left_dist
+        return right_intersection, right_dist
+
+def aabb_intersects_ray(aabb, ray):
+    """Проверяет, пересекает ли луч ограничивающий объем (AABB)"""
+    min_x, min_y, max_x, max_y = aabb
+
+    if (ray.x < min_x and ray.end_x < min_x) or (ray.x > max_x and ray.end_x > max_x):
+        return False
+    if (ray.y < min_y and ray.end_y < min_y) or (ray.y > max_y and ray.end_y > max_y):
+        return False
+    return True
+
+def point_on_segment(p, a, b):
+    """Проверяет, лежит ли точка p на отрезке ab."""
+    px, py = p
+    ax, ay = a
+    bx, by = b
+    cross = (px - ax) * (by - ay) - (py - ay) * (bx - ax)
+    if abs(cross) > 1e-6:
+        return False
+    min_x = min(ax, bx)
+    max_x = max(ax, bx)
+    min_y = min(ay, by)
+    max_y = max(ay, by)
+    return (min_x <= px <= max_x) and (min_y <= py <= max_y)
+
 
 # Initialize rays
 start = 0
@@ -175,7 +327,7 @@ for i in range(start, end, int(90 / NUM_RAYS)):
 
 
 def drawRays(rays, walls):
-    global lastClosestPoint
+    global lastClosestPoint, bvh_root
     # Sort rays by angle
     sorted_rays = sorted(rays, key=lambda ray: ray.angle)
 
@@ -188,12 +340,13 @@ def drawRays(rays, walls):
     extreme_hits = {'left': None, 'right': None}
 
     for i, ray in enumerate(sorted_rays):
-        closest = float('inf')
+        closest = MAX_RAY_LEN
         closest_point = None
         closest_wall = None
 
         for wall in walls:
-            intersect = ray.checkCollision(wall)
+            intersect = intersect_bvh_with_counting(bvh_root, ray)[0]
+            print(intersect)
             if intersect:
                 distance = math.sqrt((ray.x - intersect[0]) ** 2 + (ray.y - intersect[1]) ** 2)
                 if distance < closest:
@@ -201,7 +354,9 @@ def drawRays(rays, walls):
                     closest_point = intersect
                     closest_wall = wall
 
-        if closest_wall and closest_point:
+        if closest_point is None:
+            closest_point = [ray.end_x, ray.end_y]
+        if closest_wall:
             closest_wall.current_hits.append(closest_point)
             closest_wall.was_hit = True  # Mark wall as hit this frame
 
@@ -218,15 +373,14 @@ def drawRays(rays, walls):
             elif i == len(sorted_rays) - 1:  # Rightmost ray
                 extreme_hits['right'] = (closest_wall, closest_point)
 
-            # Draw the ray
-            if not ray_flag:
-                if i == 0 or i == len(sorted_rays) - 1:
-                    arcade.draw_line(ray.x, ray.y, closest_point[0], closest_point[1],
-                                     arcade.color.GREEN)
-            else:
+        if not ray_flag:
+            if i == 0 or i == len(sorted_rays) - 1:
                 arcade.draw_line(ray.x, ray.y, closest_point[0], closest_point[1],
-                                 arcade.color.GREEN if i == 0 or i == len(sorted_rays) - 1
-                                 else arcade.color.WHITE)
+                                 arcade.color.GREEN)
+        else:
+            arcade.draw_line(ray.x, ray.y, closest_point[0], closest_point[1],
+                             arcade.color.GREEN if i == 0 or i == len(sorted_rays) - 1
+                             else arcade.color.WHITE)
             if SOLID_RAYS:
                 arcade.draw_polygon_filled([(mx, my), closest_point, lastClosestPoint],
                                            arcade.color.WHITE)
@@ -240,6 +394,7 @@ def drawRays(rays, walls):
                 if point:
                     dots.append(point)
 
+
 def drawDots():
     arcade.draw_points(dots, arcade.color.RED, 4)
     if len(dots) > MAX_DOTS:
@@ -247,6 +402,7 @@ def drawDots():
 
 
 def generateWalls(flag=True):
+    global bvh_root
     walls.clear()
     if flag:
         walls.append(Wall((0, 0), (window.width, 0)))
@@ -260,6 +416,7 @@ def generateWalls(flag=True):
         end_x = np.random.randint(0, window.width)
         end_y = np.random.randint(0, window.height)
         walls.append(Wall((start_x, start_y), (end_x, end_y)))
+    bvh_root = build_bvh(walls)
 
 
 def changeRays():
