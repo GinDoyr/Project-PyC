@@ -1,6 +1,5 @@
 import arcade
 import math
-import random
 import numpy as np
 
 # -----Options-----
@@ -63,89 +62,109 @@ class Wall:
     def __init__(self, start_pos, end_pos):
         self.start_pos = start_pos
         self.end_pos = end_pos
-        # Initialize range markers
-        self.range_start = None
-        self.range_end = None
+        # Multiple visible ranges for partially hidden walls
+        self.visible_ranges = []  # List of (start, end) tuples
         self.current_hits = []  # Store current ray hits this frame
         self.active_rays = set()  # Track which rays are currently hitting this wall
+        self.was_hit = False  # Track if wall was hit in current frame
+        self.any_hit = False  # Track if wall was ever hit
 
-        # Calculate wall vector
+        # Wall vector calculations
         self.vector = (end_pos[0] - start_pos[0], end_pos[1] - start_pos[1])
         self.length = math.sqrt(self.vector[0] ** 2 + self.vector[1] ** 2)
+        self.direction = (self.vector[0] / self.length, self.vector[1] / self.length) if self.length > 0 else (0, 0)
 
-        # Normalized direction vector
-        if self.length > 0:
-            self.direction = (self.vector[0] / self.length, self.vector[1] / self.length)
-        else:
-            self.direction = (0, 0)
+        # For tracking extreme points
+        self.leftmost_hit = None
+        self.rightmost_hit = None
 
     def get_random_point(self):
-        if self.range_start is None or self.range_end is None:
+        if not self.visible_ranges:
             return None
 
-        # Convert range points to parameters along the wall
-        start_param = self.point_to_parameter(self.range_start)
-        end_param = self.point_to_parameter(self.range_end)
+        segment = self.visible_ranges[np.random.choice(len(self.visible_ranges))]
+        start, end = segment
 
-        # Ensure start_param is less than end_param
-        if start_param > end_param:
-            start_param, end_param = end_param, start_param
-
-        # Generate random point within the range
-        t = random.uniform(start_param, end_param)
-        x = self.start_pos[0] + t * self.vector[0]
-        y = self.start_pos[1] + t * self.vector[1]
+        # Generate random point in this segment
+        t = np.random.uniform(0, 1)
+        x = start[0] + t * (end[0] - start[0])
+        y = start[1] + t * (end[1] - start[1])
         return (x, y)
 
+    def update_visible_ranges(self):
+        if not self.was_hit:
+            # If wall wasn't hit this frame but was hit before
+            if self.any_hit:
+                # Check if any rays are still active on this wall
+                active_rays_on_wall = [ray for ray in self.active_rays if ray.last_hit_wall == self]
+                if not active_rays_on_wall:
+                    # No active rays left - reset everything
+                    self.visible_ranges = []
+                    self.leftmost_hit = None
+                    self.rightmost_hit = None
+                    self.any_hit = False
+            return
+
+        # Mark that wall was hit at least once
+        self.any_hit = True
+
+        # Convert hits to parameters along the wall
+        hit_params = [self.point_to_parameter(hit) for hit in self.current_hits]
+        hit_params.sort()
+
+        # Group consecutive hits into visible ranges
+        ranges = []
+        if hit_params:
+            current_start = hit_params[0]
+
+            for i in range(1, len(hit_params)):
+                if hit_params[i] - hit_params[i - 1] > 0.05:  # Threshold for gap detection
+                    ranges.append((current_start, hit_params[i - 1]))
+                    current_start = hit_params[i]
+
+            ranges.append((current_start, hit_params[-1]))
+
+            # Convert parameters back to points
+            self.visible_ranges = [
+                (self.parameter_to_point(start), self.parameter_to_point(end))
+                for start, end in ranges
+            ]
+
+            # Update extreme hits
+            self.leftmost_hit = self.parameter_to_point(hit_params[0])
+            self.rightmost_hit = self.parameter_to_point(hit_params[-1])
+
+        # Reset for next frame
+        self.current_hits = []
+        self.was_hit = False
+
     def point_to_parameter(self, point):
-        """Convert a point on the wall to a parameter t (0-1) along the wall"""
+        """Convert point to parameter t (0-1) along wall"""
         if self.length == 0:
             return 0
         dx = point[0] - self.start_pos[0]
         dy = point[1] - self.start_pos[1]
         return (dx * self.direction[0] + dy * self.direction[1]) / self.length
 
-    def update_range(self):
-        if not self.current_hits:
-            # No rays hitting this wall - reset range and active rays
-            self.range_start = None
-            self.range_end = None
-            self.active_rays.clear()
-            return
-
-        # Convert all hit points to parameters
-        params = [self.point_to_parameter(hit) for hit in self.current_hits]
-        min_param = min(params)
-        max_param = max(params)
-
-        # Get corresponding points
-        min_point = self.parameter_to_point(min_param)
-        max_point = self.parameter_to_point(max_param)
-
-        # Always update range based on current hits
-        self.range_start = min_point
-        self.range_end = max_point
-
-        # Reset current hits for next frame
-        self.current_hits = []
-
     def parameter_to_point(self, t):
-        """Convert parameter t (0-1) to a point on the wall"""
+        """Convert parameter t to point on wall"""
         x = self.start_pos[0] + t * self.vector[0]
         y = self.start_pos[1] + t * self.vector[1]
         return (x, y)
 
     def draw(self):
-        arcade.draw_line(self.start_pos[0], self.start_pos[1],
-                         self.end_pos[0], self.end_pos[1], arcade.color.WHITE, 3)
-        # Draw range markers if they exist
-        if self.range_start is not None:
-            arcade.draw_point(self.range_start[0], self.range_start[1],
-                              arcade.color.RED, 10)
-        if self.range_end is not None:
-            arcade.draw_point(self.range_end[0], self.range_end[1],
-                              arcade.color.PURPLE, 10)
+        # Draw main wall
+        arcade.draw_line(*self.start_pos, *self.end_pos, arcade.color.WHITE, 3)
 
+        # Draw visible ranges in green
+        for start, end in self.visible_ranges:
+            arcade.draw_line(*start, *end, arcade.color.GREEN, 2)
+
+        # Draw extreme points
+        if self.leftmost_hit:
+            arcade.draw_point(*self.leftmost_hit, arcade.color.RED, 10)
+        if self.rightmost_hit:
+            arcade.draw_point(*self.rightmost_hit, arcade.color.PURPLE, 10)
 
 # Initialize rays
 start = 0
@@ -156,22 +175,20 @@ for i in range(start, end, int(90 / NUM_RAYS)):
 
 def drawRays(rays, walls):
     global lastClosestPoint
-    if lidar_flag:
-        chosen = np.random.randint(0, len(rays) + 1, size=10)
-        ind = 0
 
-    # Sort rays by angle for proper left/right determination
+
+    # Sort rays by angle
     sorted_rays = sorted(rays, key=lambda ray: ray.angle)
 
-    # Reset current hits for all walls
+    # Reset current hits for all walls and mark as not hit this frame
     for wall in walls:
         wall.current_hits = []
+        wall.was_hit = False
 
-    # Track which walls are hit this frame
-    hit_walls = set()
+    # Track extreme rays
+    extreme_hits = {'left': None, 'right': None}
 
-    # First pass: collect all hits
-    for ray in sorted_rays:
+    for i, ray in enumerate(sorted_rays):
         closest = float('inf')
         closest_point = None
         closest_wall = None
@@ -187,42 +204,37 @@ def drawRays(rays, walls):
 
         if closest_wall and closest_point:
             closest_wall.current_hits.append(closest_point)
-            hit_walls.add(closest_wall)
+            closest_wall.was_hit = True  # Mark wall as hit this frame
 
-            # Track ray's current wall
+            # Update ray's last hit wall
             if ray.last_hit_wall != closest_wall:
                 if ray.last_hit_wall:
                     ray.last_hit_wall.active_rays.discard(ray)
                 closest_wall.active_rays.add(ray)
                 ray.last_hit_wall = closest_wall
 
-            # Draw the ray if it's first or last
-            if ray == sorted_rays[0] or ray == sorted_rays[-1]:
-                arcade.draw_line(ray.x, ray.y, closest_point[0], closest_point[1],
-                                 arcade.color.GREEN)
+            # Track extreme hits
+            if i == 0:  # Leftmost ray
+                extreme_hits['left'] = (closest_wall, closest_point)
+            elif i == len(sorted_rays) - 1:  # Rightmost ray
+                extreme_hits['right'] = (closest_wall, closest_point)
 
-            if lidar_flag:
-                if ind in chosen and lastClosestPoint != (0, 0):
-                    try:
-                        x = 0
-                        y = 0
-                        dots.append((x, y, arcade.color.RED, 3.0))
-                    except Exception as e:
-                        print(f'failed to create! {closest_point}, {lastClosestPoint}\n{e}')
-                ind += 1
-                lastClosestPoint = closest_point
-
+            # Draw the ray
+            arcade.draw_line(ray.x, ray.y, closest_point[0], closest_point[1],
+                             arcade.color.GREEN if i == 0 or i == len(sorted_rays) - 1
+                             else arcade.color.WHITE)
             if SOLID_RAYS:
                 arcade.draw_polygon_filled([(mx, my), closest_point, lastClosestPoint],
                                            arcade.color.WHITE)
                 lastClosestPoint = closest_point
 
-    # Second pass: update ranges for all walls
     for wall in walls:
-        wall.update_range()
-
-
-# [Rest of the code remains the same...]
+        wall.update_visible_ranges()
+        if lidar_flag:
+            if wall.visible_ranges:
+                point = wall.get_random_point()
+                if point:
+                    dots.append((*point, arcade.color.RED, 5))
 
 def drawDots():
     for dot in dots:
@@ -240,10 +252,10 @@ def generateWalls(flag=True):
         walls.append(Wall((0, window.height), (window.width, window.height)))
 
     for i in range(NUM_WALLS):
-        start_x = random.randint(0, window.width)
-        start_y = random.randint(0, window.height)
-        end_x = random.randint(0, window.width)
-        end_y = random.randint(0, window.height)
+        start_x = np.random.randint(0, window.width)
+        start_y = np.random.randint(0, window.height)
+        end_x = np.random.randint(0, window.width)
+        end_y = np.random.randint(0, window.height)
         walls.append(Wall((start_x, start_y), (end_x, end_y)))
 
 
@@ -282,6 +294,7 @@ class GameView(arcade.View):
         self.background_color = arcade.color.BLACK
         generateWalls()
         self.flag = True
+        self.fps = 0.0
 
     def on_draw(self):
         self.clear()
@@ -291,9 +304,11 @@ class GameView(arcade.View):
 
         drawRays([ray for ray in rays], [wall for wall in walls])
         drawDots()
+        arcade.Text(x=5.0, y=self.height - 14, text=f'FPS: {self.fps}').draw()
 
     def on_update(self, delta_time: float):
         changeRays()
+        self.fps = round(1/delta_time, 2)
 
     def on_key_press(self, key, key_modifiers):
         global left, right, up, down, lidar_flag
