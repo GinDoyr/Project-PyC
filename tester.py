@@ -24,6 +24,7 @@ down = False
 up1 = False
 down1 = False
 lidar_flag = False
+ray_flag = False
 
 
 class Ray:
@@ -175,8 +176,6 @@ for i in range(start, end, int(90 / NUM_RAYS)):
 
 def drawRays(rays, walls):
     global lastClosestPoint
-
-
     # Sort rays by angle
     sorted_rays = sorted(rays, key=lambda ray: ray.angle)
 
@@ -220,9 +219,14 @@ def drawRays(rays, walls):
                 extreme_hits['right'] = (closest_wall, closest_point)
 
             # Draw the ray
-            arcade.draw_line(ray.x, ray.y, closest_point[0], closest_point[1],
-                             arcade.color.GREEN if i == 0 or i == len(sorted_rays) - 1
-                             else arcade.color.WHITE)
+            if not ray_flag:
+                if i == 0 or i == len(sorted_rays) - 1:
+                    arcade.draw_line(ray.x, ray.y, closest_point[0], closest_point[1],
+                                     arcade.color.GREEN)
+            else:
+                arcade.draw_line(ray.x, ray.y, closest_point[0], closest_point[1],
+                                 arcade.color.GREEN if i == 0 or i == len(sorted_rays) - 1
+                                 else arcade.color.WHITE)
             if SOLID_RAYS:
                 arcade.draw_polygon_filled([(mx, my), closest_point, lastClosestPoint],
                                            arcade.color.WHITE)
@@ -234,7 +238,7 @@ def drawRays(rays, walls):
             if wall.visible_ranges:
                 point = wall.get_random_point()
                 if point:
-                    dots.append((*point, arcade.color.RED, 5))
+                    dots.append((*point, arcade.color.RED, 4))
 
 def drawDots():
     for dot in dots:
@@ -311,7 +315,7 @@ class GameView(arcade.View):
         self.fps = round(1/delta_time, 2)
 
     def on_key_press(self, key, key_modifiers):
-        global left, right, up, down, lidar_flag
+        global left, right, up, down, lidar_flag, ray_flag
         if key == arcade.key.SPACE:
             generateWalls(self.flag)
         if key == arcade.key.H:
@@ -330,6 +334,10 @@ class GameView(arcade.View):
             down = True
         if key == arcade.key.F:
             lidar_flag = True
+        if key == arcade.key.K:
+            dots.clear()
+        if key == arcade.key.R:
+            ray_flag = not ray_flag
 
     def on_key_release(self, key: int, _modifiers: int) -> bool | None:
         global left, right, up, down, lidar_flag
