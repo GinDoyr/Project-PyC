@@ -5,6 +5,7 @@ from arcade.gui import (UIManager, UIBoxLayout, UIDropdown, UIFlatButton, UISlid
 from arcade.gui.experimental import UIScrollArea
 from tkinter.filedialog import askopenfilename
 import file_mngr.conf_mngr as conf
+from png_lsb_stuff.gif_to_sprite import gifSprite
 
 
 class AssetSelector(arcade.View):
@@ -21,7 +22,6 @@ class AssetSelector(arcade.View):
         elif call == 'Audio':
             dropdown_options = dicts.get('Audio')
         else:
-            print(f'INCORRECT CALL! {call}')
             conf.logmn.log_warning(f'INCORRECT CALL! {call}')
             self.window.close()  # idk i'd rather just crash the game lol¯\_(ツ)_/¯
             exit()
@@ -30,12 +30,12 @@ class AssetSelector(arcade.View):
                 path = f'assets/{call.lower()}/{i.lower()}/{v.lower()}'
                 if not conf.check_path(path):
                     conf.create_path(path)
-                    print(f'created {path}')
                     conf.logmn.log_info(f'created {path}')
 
 
         # sound
         self.__curr_audio = None  # for some reason i decided to private all the stuff here, thought it might be better to do like this instead of leaving all in public?
+        # returning here after a while makes me question my decision on making everything private here... but ig i'll leave it like that, why not lol
         self.__bg_music = arcade.load_sound("assets/audio/music/misc/14. The World Machine.mp3", streaming=True)
         self.__pause_bg = False
 
@@ -97,19 +97,13 @@ class AssetSelector(arcade.View):
             def on_click(event):
                 if self.__player is not None:
                     if arcade.Sound.is_playing(self, self.__player):
-                        print('pausing selected audio')
-                        conf.logmn.log_info('pausing selected audio')
                         self.__pause_flag = True
                         self.__player.pause()
                         self.__ps_res_btn.text = 'Resume'
                     elif not arcade.Sound.is_playing(self, self.__player):
                         if not self.__pause_flag:
-                            print('restarting selected audio as it finished!')
-                            conf.logmn.log_info('restarting selected audio as it finished!')
                             self.__player = self.__cur_sound.play(volume=self.__volume)
                         else:
-                            print('resuming selected audio')
-                            conf.logmn.log_info('resuming selected audio')
                             self.__player.play()
                             self.__pause_flag = False
                         self.__ps_res_btn.text = 'Pause'
@@ -200,7 +194,6 @@ class AssetSelector(arcade.View):
                     if call == 'Audio' and filename.endswith(('.mp3', '.wav')):
                         conf.copy_file(filename,
                                     f'assets/{call.lower()}/{self.__dropdown1.value}/{self.__dropdown2.value}')
-                        print(f'loaded {filename}')
                         conf.logmn.log_info(f'loaded {filename}')
                         self.__vertical_list.clear()
                         for i in conf.return_contents(
@@ -212,7 +205,6 @@ class AssetSelector(arcade.View):
                     elif call == 'Sprites' and filename.endswith(('.jpg', '.png', '.gif', '.jpeg')):
                         conf.copy_file(filename,
                                     f'assets/{call.lower()}/{self.__dropdown1.value}/{self.__dropdown2.value}')
-                        print(f'loaded {filename}')
                         conf.logmn.log_info(f'loaded {filename}')
                         self.__vertical_list.clear()
                         for i in conf.return_contents(
@@ -221,10 +213,8 @@ class AssetSelector(arcade.View):
                             self.__vertical_list.add(button)
                             button.on_click = self.__selector_click
                     else:
-                        print(f'incorrect file type! call: {call}; file: {filename}')
                         conf.logmn.log_warning(f'incorrect file type! call: {call}; file: {filename}')
                 else:
-                    print(f"already loaded {filename} or closed the window")
                     conf.logmn.log_info(f"already loaded {filename} or closed the window")
             except Exception as e:
                 print(f"ERROR! idk what honestly: {e}")
@@ -249,7 +239,6 @@ class AssetSelector(arcade.View):
             def on_action(event):
                 if event.action == 'Remove':
                     conf.remove_file(self.__cur_asset)
-                    print(f'file removed: {self.__cur_asset}')
                     conf.logmn.log_info(f'file removed: {self.__cur_asset}')
                     self.__vertical_list.clear()
                     for i in conf.return_contents(
@@ -269,30 +258,32 @@ class AssetSelector(arcade.View):
                         self.__volume_len.text = 'Length (mm:ss:ms):'
                         self.__ps_res_btn.text = 'Waiting...'
 
-
         @self.__save_button.event('on_click')
         def on_click(event):
             if self.__cur_asset is not None:
-                print(f'trying to UPDATE config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
                 conf.logmn.log_info(f'trying to UPDATE config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
                 conf.update_setting(call, f'{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()}',
                                     self.__cur_asset)
-                print(f'UPDATED config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
                 conf.logmn.log_info(f'UPDATED config {call}/{self.__dropdown1.value.lower()}_{self.__dropdown2.value.lower()} to {self.__cur_asset}')
 
         # misc
         self.__call = call
         self.__previous_option1 = ''
         self.__previous_option2 = ''
+        self.gif_flag = False
 
     def __selector_click(self, event):
 
         if self.__call == 'Sprites':
             self.__sprite_list.clear()
-            print(f'trying to load assets/sprites/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}')
             conf.logmn.log_info(f'trying to load assets/sprites/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}')
             self.__cur_asset = f'assets/sprites/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}'
-            self.__sprite = arcade.Sprite(self.__cur_asset)
+            if self.__cur_asset.endswith(".gif"):
+                self.__sprite = gifSprite(self.__cur_asset, True)
+                self.__sprite.update()
+                self.gif_flag = True
+            else:
+                self.__sprite = arcade.Sprite(self.__cur_asset)
             self.__sprite.position = (self.window.width // 3, (self.__scale_y + self.__exit_button.height + 21) // 2)
             self.__sel_file.text = f'Selected: {event.source.text}'
             self.__spr_size = self.__sprite.size
@@ -304,7 +295,6 @@ class AssetSelector(arcade.View):
                 arcade.stop_sound(self.__player)
             self.__cur_asset = f'assets/audio/{self.__dropdown1.value.lower()}/{self.__dropdown2.value.lower()}/{event.source.text}'
             self.__cur_sound = arcade.load_sound(self.__cur_asset, streaming=True)
-            print(f'launching audio at {self.__volume} volume')
             conf.logmn.log_info(f'launching audio at {self.__volume} volume')
             self.__player = self.__cur_sound.play(volume=self.__volume)
             self.__sel_file.text = f'Selected: {event.source.text}'
@@ -313,7 +303,7 @@ class AssetSelector(arcade.View):
             seconds = int(sound_len // 1)
             minutes = seconds // 60
             seconds -= minutes * 60
-            if ms < 10:
+            if ms < 10:  # MAAAAYBE there's a better way to do this??? but this works... whatever leave it as is
                 ms = '0' + str(ms)
             if seconds < 10:
                 seconds = '0' + str(seconds)
@@ -368,6 +358,9 @@ class AssetSelector(arcade.View):
 
         if not self.__bg_music.is_playing(self.__curr_audio) and not self.__pause_bg:
             self.__curr_audio = self.__bg_music.play(volume=0.05)
+
+        if self.gif_flag:
+            self.__sprite_list.update(delta_time)
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.H:

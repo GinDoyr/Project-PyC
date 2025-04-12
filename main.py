@@ -370,11 +370,6 @@ class Main_menu(arcade.View):
                 self.curr_audio = self.bg_music.play(volume=self.bg_volume)
 
     def on_key_press(self, key, key_modifiers):
-        """
-        Called whenever a key on the keyboard is pressed.
-        For a full list of keys, see:
-        https://api.arcade.academy/en/latest/arcade.key.html
-        """
         if key == arcade.key.P:
             if self.bg_flag:
                 arcade.stop_sound(self.curr_audio)
