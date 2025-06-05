@@ -13,6 +13,7 @@ import file_mngr.conf_mngr as conf
 import file_mngr.zip_mngr as zipmn
 import game_loop
 import asset_selector  # might wanna smh optimize the imports on all the other stuff, look if its possible plz :(
+import diff_editor
 
 conf.logmn.log_info('starting...')
 conf.load_settings()
@@ -25,6 +26,7 @@ TEX_RED_BUTTON_HOVER = arcade.load_texture(":resources:gui_basic_assets/button/r
 TEX_RED_BUTTON_PRESS = arcade.load_texture(":resources:gui_basic_assets/button/red_press.png")
 window = arcade.Window(win_width, win_height, win_title)
 window.center_window()
+arcade.load_font('fonts/Arcade Normal 400.TTF')
 
 
 class Main_menu(arcade.View):
@@ -43,7 +45,7 @@ class Main_menu(arcade.View):
         if conf.set_settings('Settings', 'resourcepack') != 'None':
             zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
             temp = conf.set_settings('Settings', 'resourcepack')
-            self.rspk_curr = temp[temp.find('/')+1:]
+            self.rspk_curr = temp[temp.find('/') + 1:]
             self.bg_music = zipmn.try_loading_from_resourcepack('Audio', 'music_main menu')
         else:
             self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
@@ -63,7 +65,7 @@ class Main_menu(arcade.View):
         self.menu_buttons = self.ui.add(UIBoxLayout())
         self.start = self.menu_buttons.add(
             UITextureButton(
-                text="Start Game Loop",
+                text="Play",
                 texture=TEX_RED_BUTTON_NORMAL,
                 texture_hovered=TEX_RED_BUTTON_HOVER,
                 texture_pressed=TEX_RED_BUTTON_PRESS))
@@ -96,16 +98,18 @@ class Main_menu(arcade.View):
 
         # graphics settings
         self.video_buttons = self.ui.add(UIBoxLayout())
-        self.video_label = self.video_buttons.add(UILabel(text="Set resolution (still WIP dont even think i'll actually make it)"))
-        self.video_drpd = self.video_buttons.add(UIDropdown(default='1280x720', options=['yes', '1280x720']))
+        self.video_label = self.video_buttons.add(
+            UILabel(text="Set resolution (still WIP dont even think i'll actually make it)"))
+        self.video_drpd = self.video_buttons.add(
+            UIDropdown(default='1280x720', options=['WIP, wont work :)', '1280x720']))
         self.back_vid = self.video_buttons.add(UIFlatButton(text="Back"))
 
         # audio settings
         self.audio_buttons = self.ui.add(UIBoxLayout())
         self.mus_text = self.audio_buttons.add(UILabel(text=f'Music: {int(self.bg_volume * 100)}%'))
-        self.mus_slider = self.audio_buttons.add(UISlider(value=self.bg_volume*100, width=250))
+        self.mus_slider = self.audio_buttons.add(UISlider(value=self.bg_volume * 100, width=250))
         self.sfx_text = self.audio_buttons.add(UILabel(text=f'Sound effects: {int(self.sfx_volume * 100)}%'))
-        self.sfx_slider = self.audio_buttons.add(UISlider(value=self.sfx_volume*100, width=250))
+        self.sfx_slider = self.audio_buttons.add(UISlider(value=self.sfx_volume * 100, width=250))
         self.confirm_vol = self.audio_buttons.add(UIFlatButton(text="Save changes", multiline=True))
         self.back_vol = self.audio_buttons.add(UIFlatButton(text="Back"))
 
@@ -114,10 +118,11 @@ class Main_menu(arcade.View):
         self.audio_assets = self.assets_buttons.add(UIFlatButton(text="Audio"))
         self.sprites_assets = self.assets_buttons.add(UIFlatButton(text="Sprites"))
         self.resourcepacks_assets = self.assets_buttons.add(UIFlatButton(text='Resourcepacks'))
+        self.diff_assets = self.assets_buttons.add(UIFlatButton(text="Difficulties"))
         self.back_assets = self.assets_buttons.add(UIFlatButton(text="Back"))
 
         # resourcepack selection
-        rspk_buttons = self.ui.add(UIBoxLayout(x=self.window.width//4, size_hint=(1, 1)))
+        rspk_buttons = self.ui.add(UIBoxLayout(x=self.window.width // 4, size_hint=(1, 1)))
         # scroll area
         rspk_list = UIBoxLayout(size_hint=(1, 0), space_between=1)
         for i in conf.return_contents('resourcepacks'):
@@ -125,14 +130,15 @@ class Main_menu(arcade.View):
             rspk_list.add(button)
             button.on_click = self.select_click
 
-        rspk_buttons_top = UIBoxLayout(size_hint=(1,1), space_between=10, vertical=False)
-        v_scroll = rspk_buttons_top.add(UIBoxLayout(vertical=False, size_hint=(1/4, 1/2)))
+        rspk_buttons_top = UIBoxLayout(size_hint=(1, 1), space_between=10, vertical=False)
+        v_scroll = rspk_buttons_top.add(UIBoxLayout(vertical=False, size_hint=(1 / 4, 1 / 2)))
         scroll_layout = v_scroll.add(UIScrollArea(size_hint=(1, 1)))
         scroll_layout.with_border(color=arcade.uicolor.WHITE)
         scroll_layout.add(rspk_list)
         scroll_layout.invert_scroll = True
         if conf.set_settings('Settings', 'resourcepack') != 'None':
-            self.rspk_text = rspk_buttons_top.add(UILabel(width=200, text=f'Selected resourcepack: \n{self.rspk_curr}', multiline=True))
+            self.rspk_text = rspk_buttons_top.add(
+                UILabel(width=200, text=f'Selected resourcepack: \n{self.rspk_curr}', multiline=True))
         else:
             self.rspk_text = rspk_buttons_top.add(UILabel(width=200, text=f'Selected resourcepack: \n', multiline=True))
 
@@ -144,19 +150,46 @@ class Main_menu(arcade.View):
         rspk_buttons.add(rspk_buttons_top)
         rspk_buttons.add(rspk_buttons_bottom)
 
+        # difficulty selection
+        self.diff_images = [arcade.Sprite('difficulties/easy.png'),
+                            arcade.Sprite('difficulties/medium.png'),
+                            arcade.Sprite('difficulties/doom.png'),
+                            arcade.Sprite('difficulties/custom.png')]
+        button1 = UIFlatButton(text="Start")
+        button2 = UIFlatButton(text="Back")
+        button3 = UIFlatButton(text="Next")
+        button4 = UIFlatButton(text="Previous")
+        self.diff_buttons = self.ui.add(UIBoxLayout(x=window.center_x-(button1.width+button2.width+10)//2, y=25, vertical=False, space_between=10))
+        self.diff_selection = self.ui.add(
+            UIBoxLayout(x=window.center_x - (button3.width + button4.width + 220) // 2, y=window.center_y-(button3.height + button4.height)//2, vertical=False,
+                        space_between=220))
+        self.start_game = self.diff_buttons.add(button1)
+        self.start_back = self.diff_buttons.add(button2)
+        self.start_prev = self.diff_selection.add(button4)
+        self.start_next = self.diff_selection.add(button3)
+        self.diff_sprlist = arcade.SpriteList()
+        self.diff_selected = 0
+        self.diff_sprlist.append(self.diff_images[self.diff_selected])
+        self.diff_sprlist[0].position = window.center_x, window.center_y
+
+
         # button flags
         self.settings_buttons.visible = False
+        self.diff_buttons.visible = False
+        self.diff_selection.visible = False
         self.video_buttons.visible = False
         self.audio_buttons.visible = False
         self.assets_buttons.visible = False
+
         rspk_buttons.visible = False
 
         # gui defs
         # main menu buttons
         @self.start.event("on_click")
         def on_click(event):
-            game = game_loop.GameLoop(self)
-            window.show_view(game)
+            self.diff_buttons.visible = True
+            self.diff_selection.visible = True
+            self.menu_buttons.visible = False
 
         @self.button.event("on_click")
         def on_click(event):
@@ -169,9 +202,40 @@ class Main_menu(arcade.View):
 
         @self.exit_main.event("on_click")
         def on_click(event):
-            print("closing game")
             conf.logmn.log_info("see you next time :)")
             window.close()
+
+        # difficulty buttons
+        @self.start_game.event("on_click")
+        def on_click(event):
+            game = game_loop.GameLoop(self, self.diff_selected)
+            window.show_view(game)
+
+        @self.start_back.event("on_click")
+        def on_click(event):
+            self.diff_buttons.visible = False
+            self.diff_selection.visible = False
+            self.menu_buttons.visible = True
+
+        @self.start_next.event("on_click")
+        def on_click(event):
+            if self.diff_selected == len(self.diff_images) - 1:
+                self.diff_selected = 0
+            else:
+                self.diff_selected += 1
+            self.diff_sprlist.clear()
+            self.diff_sprlist.append(self.diff_images[self.diff_selected])
+            self.diff_sprlist[0].position = window.center_x, window.center_y
+
+        @self.start_prev.event("on_click")
+        def on_click(event):
+            if self.diff_selected == 0:
+                self.diff_selected = len(self.diff_images)-1
+            else:
+                self.diff_selected -= 1
+            self.diff_sprlist.clear()
+            self.diff_sprlist.append(self.diff_images[self.diff_selected])
+            self.diff_sprlist[0].position = window.center_x, window.center_y
 
         # settings buttons
         @self.video_conf.event("on_click")
@@ -208,14 +272,14 @@ class Main_menu(arcade.View):
         # audio buttons
         @self.mus_slider.event('on_change')
         def on_change(event):
-            self.bg_volume = round(self.mus_slider.value)/100
+            self.bg_volume = round(self.mus_slider.value) / 100
             if self.curr_audio is not None:
                 self.curr_audio.volume = self.bg_volume
             self.mus_text.text = f'Music: {int(self.bg_volume * 100)}%'
 
         @self.sfx_slider.event('on_change')
         def on_change(event):
-            self.sfx_volume = round(self.sfx_slider.value)/100
+            self.sfx_volume = round(self.sfx_slider.value) / 100
             self.sfx_text.text = f'Sound effects: {int(self.sfx_volume * 100)}%'
 
         @self.confirm_vol.event("on_click")
@@ -251,6 +315,11 @@ class Main_menu(arcade.View):
                 button.on_click = self.select_click
             self.assets_buttons.visible = False
 
+        @self.diff_assets.event("on_click")
+        def on_click(event):
+            diff_ed = diff_editor.DiffEditor(self)
+            window.show_view(diff_ed)
+
         @self.back_assets.event("on_click")
         def on_click(event):
             self.assets_buttons.visible = False
@@ -266,7 +335,8 @@ class Main_menu(arcade.View):
                     conf.update_setting("Settings", "resourcepack", f'resourcepacks/{self.rspk_curr}')
                     zipmn.load_resourcepack(conf.set_settings('Settings', 'resourcepack'))
                     try:
-                        self.bg_music = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'), 'Audio', 'music_main menu')
+                        self.bg_music = zipmn.load_from_resourcepack(conf.set_settings('Settings', 'resourcepack'),
+                                                                     'Audio', 'music_main menu')
                         arcade.stop_sound(self.curr_audio)
                     except Exception as e:
                         print(f'no main menu music in archive! {e}')
@@ -303,10 +373,8 @@ class Main_menu(arcade.View):
         if self.reset_flag:  # a very, VERY crude way, but idk how to fix the buttons disappearing after leaving the game loop rn. hoping to make smth better than this
             self.__init__()
         self.ui.enable()
-        if arcade.load_sound(conf.set_settings("Audio", "music_main menu")) != self.bg_music: # this kinda slows down the return to main menu, but hey, it makes it look like it's doing smth real good eh? :D yeah i might wanna fix it later smh
-            self.bg_music = arcade.load_sound(conf.set_settings("Audio", "music_main menu"))
-            self.curr_audio = None
-            self.bg_flag = False
+        self.curr_audio = self.bg_music.play(volume=self.bg_volume)
+        self.bg_flag = True
 
     def on_hide_view(self) -> None:
         self.reset_flag = True
@@ -314,20 +382,6 @@ class Main_menu(arcade.View):
         if self.bg_flag:
             arcade.stop_sound(self.curr_audio)
             self.bg_flag = False
-
-    # def resize_screen(self, change_x: int, change_y: int, move_x: int, move_y: int, move_loc: str,
-    #                   method: str = 'middle', speed: int = 1) -> None:
-    #     """
-    #     :param change_x: change the resulting window width
-    #     :param change_y: change the resulting window height
-    #     :param move_x: move the window by x
-    #     :param move_y:move the window by y
-    #     :param move_loc: top, down, left, right. f.e: if you choose left, the screen moves from the right to the left
-    #     :param method: how should the resize happen
-    #     :param speed: how fast should the resize happen
-    #     :return: hopefully a working resize function
-    #     """
-    #     pass
 
     def on_draw(self):
         self.clear()
@@ -342,7 +396,8 @@ class Main_menu(arcade.View):
                 print(window.get_location())
             window.width -= 4
             window.height += 4
-            self.menu_buttons.move(-4, 0) # to move buttons you have to move the anchor, not its elements! either move the whole set of buttons or do each button with their own anchor
+            self.menu_buttons.move(-4,
+                                   0)  # to move buttons you have to move the anchor, not its elements! either move the whole set of buttons or do each button with their own anchor
             self.clear()
             window.set_location(window.get_location()[0] + 4, window.get_location()[1])
             self.resize_count += 1
@@ -354,6 +409,8 @@ class Main_menu(arcade.View):
             self.resize_count = 0
 
         self.ui.draw()
+        if self.diff_selection.visible:
+            self.diff_sprlist.draw()
 
         # this finally centers the buttons properly. my god
         if not self.menu_center_flag:
@@ -366,8 +423,10 @@ class Main_menu(arcade.View):
 
     def on_update(self, delta_time):
         if self.bg_flag:
-            if not self.bg_music.is_playing(self.curr_audio): # tried is_complete here, didnt work for some reason ¯\_(ツ)_/¯
+            if not self.bg_music.is_playing(
+                    self.curr_audio):  # tried is_complete here, didnt work for some reason ¯\_(ツ)_/¯
                 self.curr_audio = self.bg_music.play(volume=self.bg_volume)
+
 
     def on_key_press(self, key, key_modifiers):
         if key == arcade.key.P:

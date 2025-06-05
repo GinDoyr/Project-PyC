@@ -153,7 +153,6 @@ class AssetSelector(arcade.View):
         @self.__exit_button.event("on_click")
         def on_click(event):
             self.window.show_view(main_menu)
-            print('closing asset selector')
             conf.logmn.log_info('closing asset selector')
 
         @self.__dropdown1.event("on_change")

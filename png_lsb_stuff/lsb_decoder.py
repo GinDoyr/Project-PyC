@@ -69,6 +69,7 @@ def decode_from_png(png, save_to_file=False, file_path=None, hard_write=False):
             with open(file_path, "w") as out:
                 out.write(decode(fin_bin))
         elif conf.check_path(file_path) and hard_write:
-            with open(file_path, "w") as out:                out.write(decode(fin_bin))
+            with open(file_path, "w") as out:
+                out.write(decode(fin_bin))
         else:
             conf.logmn.log_warning(f'file {file_path} is not empty! set hard_write to True if you really wish to overwrite its contents')

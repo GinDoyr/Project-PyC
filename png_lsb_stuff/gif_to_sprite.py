@@ -23,6 +23,7 @@ def gif_to_texturegrid(file):
 class gifSprite(arcade.Sprite):
     def __init__(self, gif_path=None, onetime=False, speed=1, texture_list=None):
         """
+        the speed of gif doesn't matter here, only its frames do
         :param gif_path: path to gif
         :param onetime: should the gif play one time?
         :param speed: gif speed, bigger = faster, default 1
@@ -37,6 +38,8 @@ class gifSprite(arcade.Sprite):
         self.onetime = onetime
 
     def update(self, delta_time=1 / 60):
+        self.center_x += self.change_x
+        self.center_y += self.change_y
         self.time_elapsed += delta_time
         if self.current_texture < len(self.textures):
             self.set_texture(self.current_texture)

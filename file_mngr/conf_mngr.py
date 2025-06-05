@@ -6,18 +6,20 @@ config = configparser.ConfigParser()
 
 
 def return_assets_dicts():  # this is where you should put all the existing assets
-    dicts = {'Sprites': {'Player': ['Sprite', 'Bullet', 'Crosshair'],
+    dicts = {'Sprites': {'Player': ['Sprite', 'Bullet', 'Wave', 'Wave const', 'Parry spark', 'Crosshair', 'Death'],
                          'Enemies': ['Enemy1', 'Enemy1 flash', 'Enemy1 explosion', 'Enemy1 death',
                                      'Enemy2', 'Enemy2 fire', 'Enemy2 constfire', 'Enemy2 death',
                                      'Enemy3', 'Enemy3 fire', 'Enemy3 death',
-                                     'Boss', 'Boss death', 'Boss charge', 'Boss laser', 'Boss lasersection'],
-                         'Other': ['Background', 'Walls', 'Lives', 'Hitmark']},
-             'Audio': {'Player': ['Bullet', 'Dash', 'Death'],
+                                     'Boss', 'Boss death', 'Boss charge', 'Boss laser', 'Boss shield',
+                                     'Boss locking', 'Boss locked'],
+                         'Other': ['Background', 'Walls', 'Lives', 'Hitmark', 'Oneup', 'Spawn orb', 'Spawn thunder']},
+             'Audio': {'Player': ['Bullet', 'Wave', 'Dash', 'Dash recharged', 'Death', 'Predeath', 'Hit', 'Parry',
+                                  'Parry recharged'],
                        'Enemies': ['Enemy1 rush', 'Enemy1 explosion', 'Enemy1 death',
                                    'Enemy2 fire', 'Enemy2 constfire', 'Enemy2 death',
                                    'Enemy3 death',
-                                   'Boss charge', 'Boss fire', 'Boss death'],
-                       'Other': ['Live lost', 'Live regained'],
+                                   'Boss charge', 'Boss fire', 'Boss shieldhit', 'Boss death'],
+                       'Other': ['Oneup', 'Warning', 'Wave clear', 'Game over'],
                        'Music': ['Main menu', 'Game', 'Boss']}}
     return dicts
 
