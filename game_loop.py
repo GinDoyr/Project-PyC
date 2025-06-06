@@ -1628,6 +1628,10 @@ class PauseView(arcade.View):
             print('closing game')
             conf.logmn.log_info('closing game')
             arcade.stop_sound(self.game.curr_audio)
+            try:
+                arcade.stop_sound(self.game.boss_bg_player)
+            except:
+                pass
             self.window.show_view(self.game.main_menu)
 
     def on_key_release(self, key, modifiers):
